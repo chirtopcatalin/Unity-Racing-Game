@@ -1,0 +1,72 @@
+# =============== #
+# Unity .gitignore #
+# =============== #
+
+# Compiled files
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.VC.db
+*.pdb.meta
+
+# Crash and log files
+*.stacktrace
+
+# IDE Specific
+.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Unity-generated files
+/Library/
+/Temp/
+/Obj/
+/Logs/
+/UserSettings/
+
+# Builds
+/[Bb]uilds/
+/[Bb]uild/
+
+# Cache
+/[Cc]ache/
+/[Bb]in/
+/obj/
+/[Ll]ibrary/
+
+# Asset metadata
+/[Aa]ssets/[Ss]treaming[Aa]ssets/*.meta
+/[Aa]ssets/[Rr]esources/*.meta
+/[Aa]ssets/[Pp]lugins/*.meta
+
+# Unity Collaborate
+/[Uu]ser[Ss]ettings/
+
+# Auto-generated Visual Studio files
+.vs/
+
+# Rider
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Python Virtual Environment (if inside project)
+venv/
+.env/
+
+# ML-Agents
+results/
+summaries/
+checkpoints/
+models/
