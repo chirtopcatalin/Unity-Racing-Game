@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &1369040689000736803
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2862621960055906459, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_Name
+      value: Simple Retro Car Variant 1 Variant 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 19.868193
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.076
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 34.188
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2872905680147913984, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4501246539341297636, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_SuspensionDistance
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4501246539341297636, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_SuspensionSpring.targetPosition
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4768735015124655549, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_SuspensionDistance
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4768735015124655549, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_SuspensionSpring.targetPosition
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5360878898532383369, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_SuspensionDistance
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5360878898532383369, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_SuspensionSpring.targetPosition
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8446238643048047252, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_SuspensionDistance
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8446238643048047252, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}
+      propertyPath: m_SuspensionSpring.targetPosition
+      value: 0.5
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 884099aa3c1782f4aac9fd0a8c8522c8, type: 3}

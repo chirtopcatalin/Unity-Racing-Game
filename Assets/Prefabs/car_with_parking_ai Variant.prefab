@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &8358714834315321389
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2462486017177198632, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_Name
+      value: car_with_parking_ai Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 7.2332096
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.13000011
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -6.3675785
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2470239803992497587, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4855663522042901828, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: brakingPower
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 4855663522042901828, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: steeringRate
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4855663522042901828, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: maxAcceleration
+      value: 1700
+      objectReference: {fileID: 0}
+    - target: {fileID: 4855663522042901828, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: maxSteeringAngle
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 4855663522042901828, guid: b170a17967047a64faecbfdce258febd, type: 3}
+      propertyPath: maxReverseAcceleration
+      value: 700
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b170a17967047a64faecbfdce258febd, type: 3}

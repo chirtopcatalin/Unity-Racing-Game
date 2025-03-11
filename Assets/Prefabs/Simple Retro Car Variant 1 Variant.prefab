@@ -1,0 +1,131 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &8507311765261709924
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 19.868193
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.682
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 34.188
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3285108819262748359, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3311134114217642844, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_Name
+      value: Simple Retro Car Variant 1 Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 3764501926296116259, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_SuspensionSpring.damper
+      value: 8000
+      objectReference: {fileID: 0}
+    - target: {fileID: 3764501926296116259, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_SuspensionSpring.spring
+      value: 35000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4624136450150715726, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_SuspensionSpring.damper
+      value: 8000
+      objectReference: {fileID: 0}
+    - target: {fileID: 4624136450150715726, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_SuspensionSpring.spring
+      value: 35000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5216402383646193274, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_SuspensionSpring.damper
+      value: 8000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5216402383646193274, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_SuspensionSpring.spring
+      value: 35000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529799308990750256, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: test
+      value: 
+      objectReference: {fileID: -3313715487353246627, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
+    - target: {fileID: 5529799308990750256, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: steering
+      value: 
+      objectReference: {fileID: -1205984379737315291, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
+    - target: {fileID: 5529799308990750256, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: acceleration
+      value: 
+      objectReference: {fileID: 3957452621977051701, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
+    - target: {fileID: 5529799308990750256, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: steeringRate
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529799308990750256, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: maxAcceleration
+      value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5529799308990750256, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: maxSteeringAngle
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 6420292715330403000, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_Drag
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6420292715330403000, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_Mass
+      value: 2000
+      objectReference: {fileID: 0}
+    - target: {fileID: 6420292715330403000, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_ImplicitCom
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6420292715330403000, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_CenterOfMass.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9186921189536024915, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_SuspensionSpring.damper
+      value: 8000
+      objectReference: {fileID: 0}
+    - target: {fileID: 9186921189536024915, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}
+      propertyPath: m_SuspensionSpring.spring
+      value: 35000
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 9191a34c103869d4ebeebbed824f5aa4, type: 3}

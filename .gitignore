@@ -44,6 +44,8 @@
 /obj/
 /[Ll]ibrary/
 
+temp_assets/
+
 # Asset metadata
 /[Aa]ssets/[Ss]treaming[Aa]ssets/*.meta
 /[Aa]ssets/[Rr]esources/*.meta
@@ -70,3 +72,5 @@ results/
 summaries/
 checkpoints/
 models/
+
+
