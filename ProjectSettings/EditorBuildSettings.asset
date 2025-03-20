@@ -9,7 +9,7 @@ EditorBuildSettings:
     path: Assets/ZRNAssets/005339_08932_25_14/Scenes/Sample_005339_08932_25_14.unity
     guid: 783686484a6b647158a3961cbd5e6f63
   - enabled: 1
-    path: Assets/Prefabs/playScene.unity
+    path: Assets/Scenes/playScene.unity
     guid: 7de1131f5d4329a44ac09cf250753e35
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}

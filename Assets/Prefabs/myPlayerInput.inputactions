@@ -42,7 +42,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "spawn labyrinth",
+                    "name": "clutch",
                     "type": "Button",
                     "id": "4d6761c2-53cb-4660-ba5e-a165200f87ac",
                     "expectedControlType": "",
@@ -147,7 +147,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "spawn labyrinth",
+                    "action": "clutch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
