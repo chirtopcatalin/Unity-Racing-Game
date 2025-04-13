@@ -44,7 +44,7 @@
 /obj/
 /[Ll]ibrary/
 
-temp_assets/
+/Assets/temp_assets/
 
 # Asset metadata
 /[Aa]ssets/[Ss]treaming[Aa]ssets/*.meta

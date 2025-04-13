@@ -244,8 +244,9 @@ MonoBehaviour:
   acceleration: {fileID: 3957452621977051701, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
   steering: {fileID: -1205984379737315291, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
   brake: {fileID: -8406262997399317500, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
-  spawnLabyrinthInput: {fileID: 6376302576322673466, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
-  maxAcceleration: 1200
+  cameraSwitchInput: {fileID: 0}
+  clutchInput: {fileID: 0}
+  enginePower: 0
   maxReverseAcceleration: 1000
   maxSteeringAngle: 60
   steeringRate: 1
@@ -263,8 +264,8 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 14.9253845
-      value: 8.005188
+      time: 24.462305
+      value: 9.452848
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -287,6 +288,22 @@ MonoBehaviour:
   - wheelModel: {fileID: 6943803978870549420}
     wheelCollider: {fileID: 3599854428228753075}
     axle: 1
+  gearText: {fileID: 0}
+  RPMText: {fileID: 0}
+  gearRatios: []
+  differentialRatio: 0
+  idleRPM: 0
+  redLine: 0
+  hpToRPMCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  currentGear: 0
+  increaseGearRPM: 0
+  decreaseGearRPM: 0
+  changeGearTime: 0
 --- !u!1 &1728750471946258935
 GameObject:
   m_ObjectHideFlags: 0

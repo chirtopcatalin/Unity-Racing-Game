@@ -92,8 +92,7 @@ public class CarController : MonoBehaviour
     void Update()
     {
         carSpeed = rb.linearVelocity.magnitude;
-        float speedKmh = rb.linearVelocity.magnitude * 3.6f;
-        Debug.Log("speed:" + speedKmh);
+        Debug.Log("speed:" + rb.linearVelocity.magnitude);
         RPMText.text = "RPM: " + RPM.ToString("F0");
 
         // Update gear display based on current state
@@ -286,7 +285,7 @@ public class CarController : MonoBehaviour
                 }
                 else
                 {
-                    steeringRate = 10f;
+                    steeringRate = 7f;
                 }
 
                 wheel.wheelCollider.steerAngle = Mathf.Lerp(wheel.wheelCollider.steerAngle, steeringAngle, steeringRate * Time.fixedDeltaTime);
