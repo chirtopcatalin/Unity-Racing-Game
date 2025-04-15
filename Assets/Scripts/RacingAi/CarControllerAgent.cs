@@ -8,10 +8,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Composites;
-using static AgentCarController;
-using static CarController;
 using Random = UnityEngine.Random;
-public class CarController : MonoBehaviour
+public class CarControllerAgent : MonoBehaviour
 {
     public enum Axle
     {
@@ -35,12 +33,6 @@ public class CarController : MonoBehaviour
         Changing
     };
 
-    [Header("Input Actions")]
-    public InputActionReference acceleration;
-    public InputActionReference steering;
-    public InputActionReference brake;
-    public InputActionReference cameraSwitchInput;
-    public InputActionReference clutchInput;
 
     [Header("movement")]
     public float enginePower;
@@ -58,10 +50,6 @@ public class CarController : MonoBehaviour
     private float steeringInput;
     private bool brakingInput = false;
     private float carSpeed;
-
-    public TMP_Text gearText;
-    public TMP_Text RPMText;
-
     public float[] gearRatios;
     public float differentialRatio;
     private float currentTorque;
@@ -91,34 +79,8 @@ public class CarController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        carSpeed = rb.linearVelocity.magnitude;
-        Debug.Log("speed:" + rb.linearVelocity.magnitude);
-        RPMText.text = "RPM: " + RPM.ToString("F0");
-
-        // Update gear display based on current state
-        UpdateGearDisplay();
-
         speed = wheels[3].wheelCollider.rpm * wheels[3].wheelCollider.radius * 2f * Mathf.PI / 10;
-        GetInput();
         AnimateWheels();
-    }
-
-    void UpdateGearDisplay()
-    {
-        int direction = GetDirectionOfMovement();
-
-        if (gearState == GearState.Neutral || (carSpeed < 0.5f && accelerationInput == 0))
-        {
-            gearText.text = "Gear: N";
-        }
-        else if (direction == -1 && accelerationInput < 0)
-        {
-            gearText.text = "Gear: R";
-        }
-        else
-        {
-            gearText.text = "Gear: " + (currentGear + 1).ToString();
-        }
     }
 
     // used mainly for physics calculations
@@ -331,12 +293,10 @@ public class CarController : MonoBehaviour
 
     }
 
-    void GetInput()
+    void GetInput(float accelerationInput, float steeringInput)
     {
-        accelerationInput = acceleration.action.ReadValue<float>();
-        steeringInput = steering.action.ReadValue<float>();
-        brakingInput = brake.action.IsPressed();
-        clutch = clutchInput.action.IsPressed() ? 0f : 1f;
+        this.accelerationInput = accelerationInput - 1;
+        this.steeringInput = steeringInput - 1;
     }
 
 

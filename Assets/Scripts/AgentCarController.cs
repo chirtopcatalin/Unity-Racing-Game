@@ -37,7 +37,6 @@ public class AgentCarController : MonoBehaviour
     private Rigidbody rb;
     private int accelerationInput;
     private int steeringInput;
-    private bool brakingInput;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -45,7 +44,6 @@ public class AgentCarController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         accelerationInput = 0;
         steeringInput = 0;
-        brakingInput = false;
     }
 
     // Update is called once per frame
