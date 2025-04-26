@@ -96,7 +96,37 @@ public class CarController : MonoBehaviour
         speed = wheels[3].wheelCollider.rpm * wheels[3].wheelCollider.radius * 2f * Mathf.PI / 10;
         GetInput();
         AnimateWheels();
+        CastRay();
     }
+
+    void CastRay()
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.3f;
+        Vector3 direction = transform.forward;
+        float maxDistance = 10f;
+
+        RaycastHit hit;
+
+        if (Physics.Raycast(origin, direction, out hit, maxDistance))
+        {
+            GameObject hitObject = hit.collider.gameObject;
+            Goal goalScript = hitObject.GetComponent<Goal>();
+
+            if (goalScript != null)
+            {
+                Debug.Log("Ray hit a goal: " + hitObject.name);
+            }
+            else
+            {
+                Debug.Log("Ray hit something, but it's not a goal: " + hitObject.name);
+            }
+        }
+        else
+        {
+            Debug.Log("Nothing hit");
+        }
+    }
+
 
     void UpdateGearDisplay()
     {
@@ -289,7 +319,6 @@ public class CarController : MonoBehaviour
                 {
                     wheel.wheelCollider.steerAngle = 0;
                 }
-                //Debug.Log("steering angle: " + wheel.wheelCollider.steerAngle);
             }
         }
     }

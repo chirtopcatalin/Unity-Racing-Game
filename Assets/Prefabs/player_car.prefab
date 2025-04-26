@@ -180,7 +180,7 @@ GameObject:
   - component: {fileID: 8000647798822404919}
   m_Layer: 0
   m_Name: player_car
-  m_TagString: Untagged
+  m_TagString: car
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -244,8 +244,6 @@ MonoBehaviour:
   acceleration: {fileID: 3957452621977051701, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
   steering: {fileID: -1205984379737315291, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
   brake: {fileID: -8406262997399317500, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
-  cameraSwitchInput: {fileID: 0}
-  clutchInput: {fileID: 0}
   enginePower: 0
   maxReverseAcceleration: 1000
   maxSteeringAngle: 60

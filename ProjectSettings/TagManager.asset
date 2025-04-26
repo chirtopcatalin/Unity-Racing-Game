@@ -7,6 +7,7 @@ TagManager:
   - targetSurface
   - wall
   - goal
+  - car
   layers:
   - Default
   - TransparentFX

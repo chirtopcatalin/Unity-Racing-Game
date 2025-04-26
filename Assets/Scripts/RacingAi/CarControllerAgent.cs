@@ -72,8 +72,6 @@ public class CarControllerAgent : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        accelerationInput = 0f;
-        steeringInput = 0f;
     }
 
     // Update is called once per frame
@@ -293,7 +291,7 @@ public class CarControllerAgent : MonoBehaviour
 
     }
 
-    void GetInput(float accelerationInput, float steeringInput)
+    public void GetInput(float accelerationInput, float steeringInput)
     {
         this.accelerationInput = accelerationInput - 1;
         this.steeringInput = steeringInput - 1;
