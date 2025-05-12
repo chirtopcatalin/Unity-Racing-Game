@@ -3,10 +3,10 @@ using UnityEngine;
 
 public class TrackCheckpoints : MonoBehaviour
 {
-    private static List<GameObject> goals = new List<GameObject>();
-    public static List<GameObject> GetCheckpoints(Transform parent)
+    public  List<GameObject> GetCheckpoints()
     {
-        foreach (Transform child in parent)
+        List<GameObject> goals = new List<GameObject>();
+        foreach (Transform child in this.transform)
         {
             foreach (Transform grandchild in child)
             {
