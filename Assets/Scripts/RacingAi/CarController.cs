@@ -45,6 +45,7 @@ public class CarController : MonoBehaviour
 
     public TMP_Text gearText;
     public TMP_Text RPMText;
+    public TMP_Text speedText;
 
     private float accelerationInput;
     private float steeringInput;
@@ -95,44 +96,31 @@ public class CarController : MonoBehaviour
 
     private void Awake()
     {
-        StartCoroutine(timedLoop());
     }
 
     void Update()
     {
-        carSpeed = rb.linearVelocity.magnitude;
-        RPMText.text = "RPM: ";// + RPM.ToString("F0");
-        //UpdateGearDisplay();
+        radius = 5 + KPH / 17;
+        UpdateGearDisplay();
         GetInput();
         AnimateWheels();
     }
 
     void FixedUpdate()
     {
+        Debug.Log("radius:" + radius);
         AddDownForce();
         Steer();
         calculateEnginePower();
-
         AdjustTraction();
     }
 
-    //void UpdateGearDisplay()
-    //{
-    //    int direction = GetDirectionOfMovement();
-
-    //    if (gearState == GearState.Neutral || (carSpeed < 0.5f && accelerationInput == 0))
-    //    {
-    //        gearText.text = "Gear: N";
-    //    }
-    //    else if (direction == -1 && accelerationInput < 0)
-    //    {
-    //        gearText.text = "Gear: R";
-    //    }
-    //    else
-    //    {
-    //        gearText.text = "Gear: " + (currentGear + 1).ToString();
-    //    }
-    //}
+    void UpdateGearDisplay()
+    {
+        RPMText.text = "RPM: " + engineRPM.ToString("F0");
+        gearText.text = "Gear:" + (gearNum+1).ToString("F0");
+        speedText.text = KPH.ToString("F1");
+    }
 
     void GetInput()
     {
@@ -157,7 +145,14 @@ public class CarController : MonoBehaviour
             case driveType.rwd:
                 wheels[2].wheelCollider.motorTorque = totalPower / 2;
                 wheels[3].wheelCollider.motorTorque = totalPower / 2;
-                goto default;
+                break;
+            case driveType.fwd:
+                foreach (var wheel in wheels)
+                {
+                    wheels[0].wheelCollider.motorTorque = totalPower / 2;
+                    wheels[1].wheelCollider.motorTorque = totalPower / 2;
+                }
+                break;
             default:
                 foreach (var wheel in wheels)
                 {
@@ -165,7 +160,6 @@ public class CarController : MonoBehaviour
                 }
                 break;
         }
-
         KPH = rb.linearVelocity.magnitude * 3.6f;
     }
 
