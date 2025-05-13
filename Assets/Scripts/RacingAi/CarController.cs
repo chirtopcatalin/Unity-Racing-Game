@@ -1,14 +1,13 @@
-using NUnit.Framework;
+using Google.Protobuf.WellKnownTypes;
+using NUnit.Framework.Internal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Composites;
-using Random = UnityEngine.Random;
+using static Unity.IO.LowLevel.Unsafe.AsyncReadManagerMetrics;
+
 public class CarController : MonoBehaviour
 {
     public enum Axle
@@ -38,44 +37,55 @@ public class CarController : MonoBehaviour
     public InputActionReference steering;
     public InputActionReference brake;
 
-    [Header("movement")]
-    public float enginePower;
-    public float maxReverseAcceleration;
-    public float maxSteeringAngle;
-    public float steeringRate;
-    public float brakingPower;
+    [Header("Steering")]
     public AnimationCurve steeringCurve;
 
-    [Header("Car wheels")]
+    [Header("Car Wheels")]
     public List<Wheel> wheels;
-
-    private Rigidbody rb;
-    private float accelerationInput;
-    private float steeringInput;
-    private bool brakingInput = false;
-    private float carSpeed;
 
     public TMP_Text gearText;
     public TMP_Text RPMText;
 
-    public float[] gearRatios;
-    public float differentialRatio;
-    private float currentTorque;
-    private float RPM;
-    public float idleRPM;
-    public float redLine;
-    private float wheelRPM;
-    public AnimationCurve hpToRPMCurve;
-    public int currentGear;
-    public float increaseGearRPM;
-    public float decreaseGearRPM;
-    public float changeGearTime;
-    private GearState gearState;
-    private float speed;
+    private float accelerationInput;
+    private float steeringInput;
+    private bool brakingInput = false;
+    private float carSpeed;
+    private float steeringRate;
 
 
+    internal enum driveType
+    {
+        fwd,
+        rwd,
+        awd
+    }
+    [SerializeField] private driveType drive;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [Header("Variables")]
+    public float handBrakeFrictionMultiplier = 2f;
+    public float maxRPM;
+    public float minRPM;
+    public float[] gears;
+    public float[] gearChangeSpeed;
+    public AnimationCurve enginePowerCurve;
+
+    [HideInInspector] public int gearNum = 1;
+    [HideInInspector] public float KPH;
+    [HideInInspector] public float engineRPM;
+    [HideInInspector] public bool reverse = false;
+
+    private Rigidbody rb;
+
+    private float totalPower;
+    private float brakingPower = 0;
+    private float driftFactor;
+    private bool flag = false;
+    float radius = 6;
+    private float smoothTime = 0.09f;
+    private float downForceValue = 10f;
+
+    private WheelFrictionCurve forwardFriction, sidewaysFriction;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -83,277 +93,46 @@ public class CarController : MonoBehaviour
         steeringInput = 0f;
     }
 
-    // Update is called once per frame
+    private void Awake()
+    {
+        StartCoroutine(timedLoop());
+    }
+
     void Update()
     {
         carSpeed = rb.linearVelocity.magnitude;
-        //Debug.Log("speed:" + rb.linearVelocity.magnitude);
-        RPMText.text = "RPM: " + RPM.ToString("F0");
-
-        // Update gear display based on current state
-        UpdateGearDisplay();
-
-        speed = wheels[3].wheelCollider.rpm * wheels[3].wheelCollider.radius * 2f * Mathf.PI / 10;
+        RPMText.text = "RPM: ";// + RPM.ToString("F0");
+        //UpdateGearDisplay();
         GetInput();
         AnimateWheels();
-        CastRay();
     }
 
-    void CastRay()
-    {
-        Vector3 origin = transform.position + Vector3.up * 0.3f;
-        Vector3 direction = transform.forward;
-        float maxDistance = 10f;
-
-        RaycastHit hit;
-
-        if (Physics.Raycast(origin, direction, out hit, maxDistance))
-        {
-            GameObject hitObject = hit.collider.gameObject;
-            Goal goalScript = hitObject.GetComponent<Goal>();
-
-            if (goalScript != null)
-            {
-                Debug.Log("Ray hit a goal: " + hitObject.name);
-            }
-            else
-            {
-                Debug.Log("Ray hit something, but it's not a goal: " + hitObject.name);
-            }
-        }
-        else
-        {
-            Debug.Log("Nothing hit");
-        }
-    }
-
-
-    void UpdateGearDisplay()
-    {
-        int direction = GetDirectionOfMovement();
-
-        if (gearState == GearState.Neutral || (carSpeed < 0.5f && accelerationInput == 0))
-        {
-            gearText.text = "Gear: N";
-        }
-        else if (direction == -1 && accelerationInput < 0)
-        {
-            gearText.text = "Gear: R";
-        }
-        else
-        {
-            gearText.text = "Gear: " + (currentGear + 1).ToString();
-        }
-    }
-
-    // used mainly for physics calculations
     void FixedUpdate()
     {
-        Move();
+        AddDownForce();
         Steer();
-        HandBrake();
+        calculateEnginePower();
+
+        AdjustTraction();
     }
 
-    void Move()
-    {
-        int direction = GetDirectionOfMovement();
-        float speed = rb.linearVelocity.magnitude;
-        currentTorque = CalculateTorque();
+    //void UpdateGearDisplay()
+    //{
+    //    int direction = GetDirectionOfMovement();
 
-        foreach (Wheel wheel in wheels)
-        {
-            wheel.wheelCollider.brakeTorque = 0;
-        }
-
-        if (accelerationInput > 0)
-        {
-            if (direction >= 0 || speed < 0.5f)
-            {
-                ApplyTorque(currentTorque);
-            }
-            else if (direction == -1 && speed >= 0.5f)
-            {
-                ApplyBrake(brakingPower);
-            }
-        }
-        else if (accelerationInput < 0)
-        {
-            if (direction <= 0 || speed < 0.5f)
-            {
-                ApplyTorque(accelerationInput * maxReverseAcceleration);
-            }
-            else if (direction == 1 && speed >= 0.5f)
-            {
-                ApplyBrake(brakingPower);
-            }
-        }
-        else
-        {
-            ApplyTorque(0);
-        }
-    }
-
-    float CalculateTorque()
-    {
-        float torque = 0;
-
-        if (RPM < idleRPM + 200 && accelerationInput == 0 && currentGear == 0)
-        {
-            gearState = GearState.Neutral;
-        }
-        if (accelerationInput > 0 && gearState == GearState.Neutral)
-        {
-            gearState = GearState.Running;
-        }
-        if (gearState == GearState.Running)
-        {
-            if (RPM > increaseGearRPM && currentGear < gearRatios.Length - 1)
-            {
-                StartCoroutine(ChangeGear(1));
-            }
-            else if (RPM < decreaseGearRPM && currentGear > 0)
-            {
-                StartCoroutine(ChangeGear(-1));
-            }
-        }
-
-        wheelRPM = Mathf.Abs((GetAverageWheelRPM()) * gearRatios[currentGear] * differentialRatio);
-        RPM = Mathf.Lerp(RPM, Mathf.Max(idleRPM, wheelRPM), Time.deltaTime * 3f);
-
-        torque = (hpToRPMCurve.Evaluate(RPM / redLine) * enginePower / RPM) * gearRatios[currentGear] * differentialRatio * 5252f;
-
-        return torque;
-    }
-
-    float GetAverageWheelRPM()
-    {
-        float averageRPM = 0;
-        averageRPM = (wheels[2].wheelCollider.rpm + wheels[3].wheelCollider.rpm);
-        return averageRPM;
-    }
-
-
-    void ApplyBrake(float brakingForce)
-    {
-        foreach (Wheel wheel in wheels)
-        {
-            if (wheel.axle == Axle.Front)
-            {
-                wheel.wheelCollider.brakeTorque = brakingPower * 0.7f;
-            }
-            else
-            {
-                wheel.wheelCollider.brakeTorque = brakingPower * 0.3f;
-            }
-
-        }
-    }
-
-    void ApplyTorque(float torque)
-    {
-        foreach (Wheel wheel in wheels)
-        {
-            wheel.wheelCollider.motorTorque = torque;
-        }
-    }
-
-    IEnumerator ChangeGear(int gearChange)
-    {
-        gearState = GearState.CheckingChange;
-        if (currentGear + gearChange >= 0 && currentGear + gearChange < gearRatios.Length)
-        {
-            if (gearChange > 0)
-            {
-                //increase the gear
-                yield return new WaitForSeconds(0.7f);
-                if (RPM < increaseGearRPM || currentGear >= gearRatios.Length - 1)
-                {
-                    gearState = GearState.Running;
-                    yield break;
-                }
-            }
-            if (gearChange < 0)
-            {
-                //decrease the gear
-                yield return new WaitForSeconds(0.1f);
-
-                if (RPM > decreaseGearRPM || currentGear <= 0)
-                {
-                    gearState = GearState.Running;
-                    yield break;
-                }
-            }
-            gearState = GearState.Changing;
-            yield return new WaitForSeconds(changeGearTime);
-            currentGear += gearChange;
-        }
-
-        if (gearState != GearState.Neutral)
-        {
-            gearState = GearState.Running;
-        }
-    }
-
-
-    void Steer()
-    {
-        var steeringAngle = steeringInput * steeringCurve.Evaluate(carSpeed);
-
-        foreach (Wheel wheel in wheels)
-        {
-            if (wheel.axle == Axle.Front)
-            {
-
-                if (steeringInput == 1 || steeringInput == -1)
-                {
-                    steeringRate = 2.5f;
-                }
-                else
-                {
-                    steeringRate = 7f;
-                }
-
-                wheel.wheelCollider.steerAngle = Mathf.Lerp(wheel.wheelCollider.steerAngle, steeringAngle, steeringRate * Time.fixedDeltaTime);
-
-                if (steeringInput == 0 && Math.Abs(wheel.wheelCollider.steerAngle) < 0.2)
-                {
-                    wheel.wheelCollider.steerAngle = 0;
-                }
-            }
-        }
-    }
-
-    void AnimateWheels()
-    {
-        foreach (Wheel wheel in wheels)
-        {
-            Vector3 pos;
-            Quaternion rot;
-            wheel.wheelCollider.GetWorldPose(out pos, out rot);
-
-            wheel.wheelModel.transform.position = pos;
-            wheel.wheelModel.transform.rotation = rot;
-        }
-    }
-
-    void HandBrake()
-    {
-        if (brakingInput == true)
-        {
-            foreach (Wheel wheel in wheels)
-            {
-                if (wheel.axle == Axle.Rear)
-                {
-                    wheel.wheelCollider.brakeTorque = brakingPower;
-                }
-                else
-                {
-                    wheel.wheelCollider.brakeTorque = 0;
-                }
-            }
-        }
-
-    }
+    //    if (gearState == GearState.Neutral || (carSpeed < 0.5f && accelerationInput == 0))
+    //    {
+    //        gearText.text = "Gear: N";
+    //    }
+    //    else if (direction == -1 && accelerationInput < 0)
+    //    {
+    //        gearText.text = "Gear: R";
+    //    }
+    //    else
+    //    {
+    //        gearText.text = "Gear: " + (currentGear + 1).ToString();
+    //    }
+    //}
 
     void GetInput()
     {
@@ -362,20 +141,220 @@ public class CarController : MonoBehaviour
         brakingInput = brake.action.IsPressed();
     }
 
-
-    int GetDirectionOfMovement()
+    void Move()
     {
-        if (Vector3.Dot(rb.linearVelocity, transform.forward) > 0.1f)
+        brakeVehicle();
+
+        switch (drive)
         {
-            return 1; // forward
+            case driveType.awd:
+                foreach (var wheel in wheels)
+                {
+                    wheel.wheelCollider.motorTorque = totalPower / 4;
+                    wheel.wheelCollider.brakeTorque = brakingPower;
+                }
+                break;
+            case driveType.rwd:
+                wheels[2].wheelCollider.motorTorque = totalPower / 2;
+                wheels[3].wheelCollider.motorTorque = totalPower / 2;
+                goto default;
+            default:
+                foreach (var wheel in wheels)
+                {
+                    wheel.wheelCollider.brakeTorque = brakingPower;
+                }
+                break;
         }
-        else if (Vector3.Dot(rb.linearVelocity, transform.forward) < -0.1f)
+
+        KPH = rb.linearVelocity.magnitude * 3.6f;
+    }
+
+    void brakeVehicle()
+    {
+        if (accelerationInput < 0)
         {
-            return -1; // backward
+            brakingPower = (KPH >= 10) ? 500 : 0;
+        }
+        else if (accelerationInput == 0 && (KPH <= 10))
+        {
+            brakingPower = 10;
         }
         else
         {
-            return 0; // not moving
+            brakingPower = 0;
+        }
+    }
+
+    private void calculateEnginePower()
+    {
+        if (accelerationInput != 0)
+        {
+            rb.linearDamping = 0.005f;
+        }
+        if (steeringInput == 0)
+        {
+            rb.linearDamping = 0.1f;
+        }
+        totalPower = 3.6f * enginePowerCurve.Evaluate(engineRPM) * (accelerationInput);
+
+        float velocity = 0.0f;
+        if (engineRPM >= maxRPM || flag)
+        {
+            engineRPM = Mathf.SmoothDamp(engineRPM, maxRPM - 500, ref velocity, 0.05f);
+
+            flag = (engineRPM >= maxRPM - 450) ? true : false;
+        }
+        else
+        {
+            engineRPM = Mathf.SmoothDamp(engineRPM, 1000 + (Mathf.Abs(wheelsRPM()) * 3.6f * (gears[gearNum])), ref velocity, smoothTime);
+        }
+        if (engineRPM >= maxRPM + 1000) engineRPM = maxRPM + 1000; // clamp
+        Move();
+        Shifter();
+    }
+
+    private void AddDownForce()
+    {
+
+        rb.AddForce(-transform.up * downForceValue * rb.linearVelocity.magnitude);
+
+    }
+
+    void Shifter()
+    {
+        if (!isGrounded()) return;
+
+        if (engineRPM > maxRPM && gearNum < gears.Length - 1 && !reverse && KPH >= gearChangeSpeed[gearNum])
+        {
+            gearNum++;
+            return;
+        }
+        if (engineRPM < minRPM && gearNum > 0)
+        {
+            gearNum--;
+        }
+    }
+
+    bool isGrounded()
+    {
+        foreach (var wheel in wheels)
+        {
+            if (!wheel.wheelCollider.isGrounded) return false;
+        }
+        return true;
+    }
+
+    float wheelsRPM()
+    {
+        float sum = 0;
+        foreach (var wheel in wheels)
+        {
+            sum += wheel.wheelCollider.rpm;
+        }
+        float avg = sum / wheels.Count;
+
+        if (avg < 0 && !reverse) reverse = true;
+        else if (avg > 0 && reverse) reverse = false;
+
+        return avg;
+    }
+
+    void Steer()
+    {
+        if (steeringInput > 0)
+        {
+            wheels[0].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius + (1.5f / 2))) * steeringInput;
+            wheels[1].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius - (1.5f / 2))) * steeringInput;
+        }
+        else if (steeringInput < 0)
+        {
+            wheels[0].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius - (1.5f / 2))) * steeringInput;
+            wheels[1].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius + (1.5f / 2))) * steeringInput;
+
+        }
+        else
+        {
+            wheels[0].wheelCollider.steerAngle = 0;
+            wheels[1].wheelCollider.steerAngle = 0;
+        }
+    }
+
+    void AnimateWheels()
+    {
+        foreach (var wheel in wheels)
+        {
+            Vector3 pos;
+            Quaternion rot;
+            wheel.wheelCollider.GetWorldPose(out pos, out rot);
+            wheel.wheelModel.transform.position = pos;
+            wheel.wheelModel.transform.rotation = rot;
+        }
+    }
+
+    private void AdjustTraction()
+    {
+        float driftSmothFactor = .7f * Time.deltaTime;
+
+        if (brakingInput)
+        {
+            sidewaysFriction = wheels[0].wheelCollider.sidewaysFriction;
+            forwardFriction = wheels[0].wheelCollider.forwardFriction;
+
+            float velocity = 0;
+            sidewaysFriction.extremumValue = sidewaysFriction.asymptoteValue = forwardFriction.extremumValue = forwardFriction.asymptoteValue =
+                Mathf.SmoothDamp(forwardFriction.asymptoteValue, driftFactor * handBrakeFrictionMultiplier, ref velocity, driftSmothFactor);
+
+            for (int i = 0; i < 4; i++)
+            {
+                wheels[i].wheelCollider.sidewaysFriction = sidewaysFriction;
+                wheels[i].wheelCollider.forwardFriction = forwardFriction;
+            }
+
+            sidewaysFriction.extremumValue = sidewaysFriction.asymptoteValue = forwardFriction.extremumValue = forwardFriction.asymptoteValue = 1.1f;
+            for (int i = 0; i < 2; i++)
+            {
+                wheels[i].wheelCollider.sidewaysFriction = sidewaysFriction;
+                wheels[i].wheelCollider.forwardFriction = forwardFriction;
+            }
+            rb.AddForce(transform.forward * (KPH / 400) * 10000);
+        }
+        else
+        {
+
+            forwardFriction = wheels[0].wheelCollider.forwardFriction;
+            sidewaysFriction = wheels[0].wheelCollider.sidewaysFriction;
+
+            forwardFriction.extremumValue = forwardFriction.asymptoteValue = sidewaysFriction.extremumValue = sidewaysFriction.asymptoteValue =
+                ((KPH * handBrakeFrictionMultiplier) / 300) + 1;
+
+            for (int i = 0; i < 4; i++)
+            {
+                wheels[i].wheelCollider.forwardFriction = forwardFriction;
+                wheels[i].wheelCollider.sidewaysFriction = sidewaysFriction;
+
+            }
+        }
+
+        for (int i = 2; i < 4; i++)
+        {
+
+            WheelHit wheelHit;
+
+            wheels[i].wheelCollider.GetGroundHit(out wheelHit);
+
+            if (wheelHit.sidewaysSlip < 0) driftFactor = (1 + -steeringInput) * Mathf.Abs(wheelHit.sidewaysSlip);
+
+            if (wheelHit.sidewaysSlip > 0) driftFactor = (1 + steeringInput) * Mathf.Abs(wheelHit.sidewaysSlip);
+        }
+
+    }
+
+    private IEnumerator timedLoop()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(.7f);
+            radius = 6 + KPH / 20;
         }
     }
 }
