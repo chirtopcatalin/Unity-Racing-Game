@@ -4,6 +4,7 @@ using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 using UnityEngine.InputSystem.XR;
+using UnityEngine.InputSystem;
 
 public class RacingAgent : Agent
 {
@@ -16,8 +17,13 @@ public class RacingAgent : Agent
     private int nextCheckpoint = 0;
     private int lapCount = 0;
 
+    [Header("Input Actions")]
+    public InputActionReference acceleration;
+    public InputActionReference steering;
+
     public override void Initialize()
     {
+        lapCount = 0;
         carControllerAgent = GetComponent<CarControllerAgent>();
         trackCheckpoints = transform.parent.GetComponent<TrackCheckpoints>();
         orderedGoals = trackCheckpoints.GetCheckpoints();
@@ -44,6 +50,8 @@ public class RacingAgent : Agent
 
     public override void OnActionReceived(ActionBuffers actions)
     {
+        AddReward(-0.001f);
+
         carControllerAgent.GetInput(
             actions.DiscreteActions[0],
             actions.DiscreteActions[1]
@@ -52,11 +60,11 @@ public class RacingAgent : Agent
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         var agentActions = actionsOut.DiscreteActions;
-        if (Input.GetAxis("Vertical") > 0)
+        if (acceleration.action.ReadValue<float>() > 0)
         {
             agentActions[0] = 2;
         }
-        else if (Input.GetAxis("Vertical") < 0)
+        else if (acceleration.action.ReadValue<float>() < 0)
         {
             agentActions[0] = 0;
         }
@@ -65,11 +73,11 @@ public class RacingAgent : Agent
             agentActions[0] = 1;
         }
 
-        if (Input.GetAxis("Horizontal") > 0)
+        if (steering.action.ReadValue<float>() > 0)
         {
             agentActions[1] = 2;
         }
-        else if (Input.GetAxis("Horizontal") < 0)
+        else if (steering.action.ReadValue<float>() < 0)
         {
             agentActions[1] = 0;
         }
@@ -81,10 +89,32 @@ public class RacingAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        sensor.AddObservation(transform.localPosition);
-        sensor.AddObservation(orderedGoals[nextCheckpoint].transform.localPosition);
-        sensor.AddObservation(rb.transform.localRotation);
+        if (orderedGoals == null || orderedGoals.Count == 0)
+        {
+            Debug.LogWarning($"{name}: orderedGoals is null or empty");
+            return;
+        }
+
+        int checkpointIndexToObserve = nextCheckpoint;
+
+        if (checkpointIndexToObserve >= orderedGoals.Count)
+        {
+            checkpointIndexToObserve = 0;
+        }
+
+        Vector3 toCheckpointWorld = orderedGoals[checkpointIndexToObserve].transform.position - transform.position;
+        Vector3 toCheckpointLocal = transform.InverseTransformDirection(toCheckpointWorld);
+        sensor.AddObservation(toCheckpointLocal);
+        sensor.AddObservation(orderedGoals[checkpointIndexToObserve].transform.localPosition);
+
         sensor.AddObservation(rb.linearVelocity);
+
+        //Vector3 velLocal   = transform.InverseTransformDirection(rb.velocity);
+        //float   forwardVel = velLocal.z;
+        //float   lateralVel = Mathf.Abs(velLocal.x);
+
+        //AddReward( 0.001f * forwardVel);  
+        //AddReward(-0.0005f * lateralVel);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -100,12 +130,17 @@ public class RacingAgent : Agent
 
                 if (nextCheckpoint >= orderedGoals.Count)
                 {
+                    AddReward(+1.0f);
                     lapCount++;
-                    //Debug.Log($"{name} completed lap {lapCount}!");
-                    AddReward(+1f);
-                    if (Academy.Instance.IsCommunicatorOn)
-                        EndEpisode();
+                    Debug.Log($"{name} completed lap {lapCount}!");
+                    //if (Academy.Instance.IsCommunicatorOn)
+                        //EndEpisode();
                     nextCheckpoint = 0;
+                }
+                if(lapCount == 3)
+                {
+                    AddReward(+2.0f);
+                    EndEpisode();
                 }
             }
             else
@@ -116,16 +151,16 @@ public class RacingAgent : Agent
         }
         else if (other.CompareTag("wall"))
         {
-            if (Academy.Instance.IsCommunicatorOn)
-            {
-                AddReward(-0.1f);
+            //if (Academy.Instance.IsCommunicatorOn)
+            //{
+                AddReward(-4f);
                 EndEpisode();
-            }
+            //}
             //Debug.Log($"{name} hit a wall.");
         }
         else if (other.CompareTag("car"))
         {
-            AddReward(-0.2f);
+            AddReward(-0.5f);
         }
     }
 }

@@ -108,10 +108,9 @@ public class CarController : MonoBehaviour
 
     void FixedUpdate()
     {
-        Debug.Log("radius:" + radius);
         AddDownForce();
         Steer();
-        calculateEnginePower();
+        CalculateEngineTorque();
         AdjustTraction();
     }
 
@@ -131,7 +130,7 @@ public class CarController : MonoBehaviour
 
     void Move()
     {
-        brakeVehicle();
+        ApplyBrake();
 
         switch (drive)
         {
@@ -163,7 +162,7 @@ public class CarController : MonoBehaviour
         KPH = rb.linearVelocity.magnitude * 3.6f;
     }
 
-    void brakeVehicle()
+    void ApplyBrake()
     {
         if (accelerationInput < 0)
         {
@@ -179,7 +178,7 @@ public class CarController : MonoBehaviour
         }
     }
 
-    private void calculateEnginePower()
+    private void CalculateEngineTorque()
     {
         if (accelerationInput != 0)
         {
@@ -200,7 +199,7 @@ public class CarController : MonoBehaviour
         }
         else
         {
-            engineRPM = Mathf.SmoothDamp(engineRPM, 1000 + (Mathf.Abs(wheelsRPM()) * 3.6f * (gears[gearNum])), ref velocity, smoothTime);
+            engineRPM = Mathf.SmoothDamp(engineRPM, 1000 + (Mathf.Abs(WheelsRPM()) * 3.6f * (gears[gearNum])), ref velocity, smoothTime);
         }
         if (engineRPM >= maxRPM + 1000) engineRPM = maxRPM + 1000; // clamp
         Move();
@@ -238,7 +237,7 @@ public class CarController : MonoBehaviour
         return true;
     }
 
-    float wheelsRPM()
+    float WheelsRPM()
     {
         float sum = 0;
         foreach (var wheel in wheels)
