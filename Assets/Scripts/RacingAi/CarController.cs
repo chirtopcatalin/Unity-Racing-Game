@@ -50,8 +50,6 @@ public class CarController : MonoBehaviour
     private float accelerationInput;
     private float steeringInput;
     private bool brakingInput = false;
-    private float carSpeed;
-    private float steeringRate;
 
 
     internal enum driveType
@@ -100,7 +98,7 @@ public class CarController : MonoBehaviour
 
     void Update()
     {
-        radius = 5 + KPH / 17;
+        radius = 4 + KPH / 25;
         UpdateGearDisplay();
         GetInput();
         AnimateWheels();
@@ -254,21 +252,14 @@ public class CarController : MonoBehaviour
 
     void Steer()
     {
-        if (steeringInput > 0)
-        {
-            wheels[0].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius + (1.5f / 2))) * steeringInput;
-            wheels[1].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius - (1.5f / 2))) * steeringInput;
-        }
-        else if (steeringInput < 0)
-        {
-            wheels[0].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius - (1.5f / 2))) * steeringInput;
-            wheels[1].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius + (1.5f / 2))) * steeringInput;
+        var steeringAngle = steeringInput * steeringCurve.Evaluate(KPH);
 
-        }
-        else
+        foreach (Wheel wheel in wheels)
         {
-            wheels[0].wheelCollider.steerAngle = 0;
-            wheels[1].wheelCollider.steerAngle = 0;
+            if (wheel.axle == Axle.Front)
+            {
+                wheel.wheelCollider.steerAngle = steeringAngle;
+            }
         }
     }
 

@@ -71,7 +71,6 @@ public class CarControllerAgent : MonoBehaviour
     private float brakingPower = 0;
     private float driftFactor;
     private bool flag = false;
-    float radius = 6;
     private float smoothTime = 0.09f;
     private float downForceValue = 10f;
 
@@ -90,7 +89,6 @@ public class CarControllerAgent : MonoBehaviour
 
     void Update()
     {
-        radius = 5 + KPH / 17;
         AnimateWheels();
     }
 
@@ -228,21 +226,14 @@ public class CarControllerAgent : MonoBehaviour
 
     void Steer()
     {
-        if (steeringInput > 0)
-        {
-            wheels[0].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius + (1.5f / 2))) * steeringInput;
-            wheels[1].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius - (1.5f / 2))) * steeringInput;
-        }
-        else if (steeringInput < 0)
-        {
-            wheels[0].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius - (1.5f / 2))) * steeringInput;
-            wheels[1].wheelCollider.steerAngle = Mathf.Rad2Deg * Mathf.Atan(2.55f / (radius + (1.5f / 2))) * steeringInput;
+        var steeringAngle = steeringInput * steeringCurve.Evaluate(KPH);
 
-        }
-        else
+        foreach (Wheel wheel in wheels)
         {
-            wheels[0].wheelCollider.steerAngle = 0;
-            wheels[1].wheelCollider.steerAngle = 0;
+            if (wheel.axle == Axle.Front)
+            {
+                wheel.wheelCollider.steerAngle = steeringAngle;
+            }
         }
     }
 
