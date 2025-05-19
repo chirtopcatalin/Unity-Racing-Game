@@ -23,7 +23,7 @@ public class RacingAgent : Agent
 
     private Vector3 _lastPosition;
     private float _stuckTimer;
-    public float stuckTimeout = 4f;
+    public float stuckTimeout = 8f;
     public float movementThreshold = 0.5f;
 
     public override void Initialize()
@@ -92,7 +92,7 @@ public class RacingAgent : Agent
     public override void OnActionReceived(ActionBuffers actions)
     {
         // Time penalty
-        AddReward(-0.0003f);
+        AddReward(-0.0001f);
 
         // Drive input
         carControllerAgent.GetInput(
@@ -102,8 +102,7 @@ public class RacingAgent : Agent
 
         Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
         float forwardVel = velLocal.z;
-        AddReward(0.0001f * forwardVel);
-
+        AddReward(0.00002f * forwardVel);
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -133,16 +132,8 @@ public class RacingAgent : Agent
         Vector3 toCheckpointWorld = orderedGoals[checkpointIndexToObserve].transform.position - transform.position;
         Vector3 toCheckpointLocal = transform.InverseTransformDirection(toCheckpointWorld);
         sensor.AddObservation(toCheckpointLocal.normalized);
-        //sensor.AddObservation(orderedGoals[checkpointIndexToObserve].transform.localPosition);
 
         sensor.AddObservation(rb.linearVelocity);
-
-        //Vector3 velLocal   = transform.InverseTransformDirection(rb.velocity);
-        //float   forwardVel = velLocal.z;
-        //float   lateralVel = Mathf.Abs(velLocal.x);
-
-        //AddReward( 0.001f * forwardVel);  
-        //AddReward(-0.0005f * lateralVel);
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -150,11 +141,11 @@ public class RacingAgent : Agent
         if (collision.collider.CompareTag("car"))
         {
             //Debug.Log("Collision with another car!");
-            AddReward(-0.5f);
+            AddReward(-0.2f);
         }
         if (collision.collider.CompareTag("wall"))
         {
-            AddReward(-2f);
+            AddReward(-0.2f);
         }
     }
     private void OnTriggerEnter(Collider other)
@@ -174,22 +165,22 @@ public class RacingAgent : Agent
                 {
                     // completed a lap
                     lapCount++;
-                    AddReward(+1.0f);
                     nextCheckpoint = 0;
+
+                    AddReward(+0.5f);
+
+                    if (lapCount >= 3)
+                    {
+                        Debug.Log("successful episode(3 laps)");
+                        EndEpisode();
+                    }
                 }
 
                 int overtaken = raceManager.UpdateAgentProgress(this, lapCount, nextCheckpoint);
                 if (overtaken > 0)
                 {
-                    AddReward(0.03f * overtaken);
+                    AddReward(0.05f);
                     //Debug.Log($"{name} overtook {overtaken} car(s)!");
-                }
-
-                if (lapCount >= 3)
-                {
-                    Debug.Log("succsessful episode(3 laps)");
-                    AddReward(+3f);
-                    EndEpisode();
                 }
             }
             else
