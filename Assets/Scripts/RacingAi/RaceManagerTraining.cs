@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class RaceManagerTraining : MonoBehaviour
 {
+
     private List<RacingAgent> agents = new List<RacingAgent>();
     private Dictionary<RacingAgent, int> progress = new Dictionary<RacingAgent, int>();
     private List<Vector3> startingPositions = new List<Vector3>();

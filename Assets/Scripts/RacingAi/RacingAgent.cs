@@ -21,6 +21,12 @@ public class RacingAgent : Agent
     public InputActionReference acceleration;
     public InputActionReference steering;
 
+    [Header("Raycast Settings")]
+    [SerializeField] private int numRays = 16;
+    [SerializeField] private float rayMaxDistance = 25f;
+    [SerializeField] private float rayHeightOffset = 0.5f;
+
+
     private Vector3 _lastPosition;
     private float _stuckTimer;
     public float stuckTimeout = 8f;
@@ -47,8 +53,8 @@ public class RacingAgent : Agent
             _stuckTimer += Time.fixedDeltaTime;
             if (_stuckTimer >= stuckTimeout)
             {
-                AddReward(-1.0f);
-                EndEpisode();
+                AddReward(-10.0f);
+                raceManager.ResetAllAgents();
             }
         }
         else
@@ -66,7 +72,6 @@ public class RacingAgent : Agent
         orderedGoals = trackCheckpoints.GetCheckpoints();
         lapCount = 0;
         nextCheckpoint = 0;
-        raceManager.ResetAllAgents();
     }
 
     private void OnCollisionStay(Collision collision)
@@ -74,25 +79,23 @@ public class RacingAgent : Agent
         if (collision.collider.CompareTag("car"))
         {
             //Debug.Log("collision stay");
-            AddReward(-0.001f);
+            AddReward(-0.04f);
         }
     }
 
     public void ResetAgent(Vector3 startingPosition, Quaternion startingRotation)
     {
+        EndEpisode();
         rb.angularVelocity = Vector3.zero;
         rb.linearVelocity = Vector3.zero;
         transform.position = startingPosition;
-        // face the right way
         transform.rotation = startingRotation * Quaternion.Euler(0, 180f, 0);
-        nextCheckpoint = 0;
-        lapCount = 0;
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
         // Time penalty
-        AddReward(-0.0001f);
+        AddReward(-0.0015f);
 
         // Drive input
         carControllerAgent.GetInput(
@@ -102,7 +105,18 @@ public class RacingAgent : Agent
 
         Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
         float forwardVel = velLocal.z;
-        AddReward(0.00002f * forwardVel);
+
+        float speedReward = 0.0006f;
+        //if (forwardVel > 25.0f)
+        //{
+        //    speedReward = 0.0003f;
+        //}
+        //else if (forwardVel > 5.0f)
+        //{
+        //    speedReward = 0.0002f;
+        //}
+        AddReward(speedReward * forwardVel);
+
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -133,7 +147,46 @@ public class RacingAgent : Agent
         Vector3 toCheckpointLocal = transform.InverseTransformDirection(toCheckpointWorld);
         sensor.AddObservation(toCheckpointLocal.normalized);
 
+        Vector3 toCheckpointDir = toCheckpointWorld.normalized;
+        float alignment = Vector3.Dot(transform.forward, toCheckpointDir);
+        sensor.AddObservation(alignment);
+
         sensor.AddObservation(rb.linearVelocity);
+
+        var origin = transform.position + Vector3.up * rayHeightOffset;
+        float angleStep = 360f / numRays;
+
+        for (int i = 0; i < numRays; i++)
+        {
+            float angle = i * angleStep;
+            Vector3 dir = Quaternion.Euler(0f, angle, 0f) * transform.forward;
+            Debug.DrawRay(origin, dir * rayMaxDistance, Color.red);
+            // cast and sort hits by distance
+            var hits = Physics.RaycastAll(origin, dir, rayMaxDistance);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+                // take first two hits (or fill with defaults)
+                for (int h = 0; h < 3; h++)
+                {
+                    if (h < hits.Length)
+                    {
+                    float tagId = hits[h].collider.CompareTag("wall") ? 1f :
+                                      hits[h].collider.CompareTag("car") ? 2f :
+                                      hits[h].collider.CompareTag("goal") ? 3f :
+                                      0f;
+
+                        float distNorm = hits[h].distance / rayMaxDistance;
+
+                        sensor.AddObservation(tagId);
+                        sensor.AddObservation(distNorm);
+                    }
+                    else
+                    {
+                        sensor.AddObservation(0f);
+                        sensor.AddObservation(1f);
+                    }
+                }
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -141,11 +194,11 @@ public class RacingAgent : Agent
         if (collision.collider.CompareTag("car"))
         {
             //Debug.Log("Collision with another car!");
-            AddReward(-0.2f);
+            AddReward(-3.0f);
         }
         if (collision.collider.CompareTag("wall"))
         {
-            AddReward(-0.2f);
+            AddReward(-3.0f);
         }
     }
     private void OnTriggerEnter(Collider other)
@@ -155,7 +208,7 @@ public class RacingAgent : Agent
             var hitGoal = other.gameObject;
             if (hitGoal == orderedGoals[nextCheckpoint])
             {
-                AddReward(+1.0f / orderedGoals.Count);
+                AddReward(+10.0f / orderedGoals.Count);
 
                 int oldNext = nextCheckpoint;
                 int oldLap = lapCount;
@@ -167,12 +220,10 @@ public class RacingAgent : Agent
                     lapCount++;
                     nextCheckpoint = 0;
 
-                    AddReward(+0.5f);
-
                     if (lapCount >= 3)
                     {
                         Debug.Log("successful episode(3 laps)");
-                        EndEpisode();
+                        raceManager.ResetAllAgents();
                     }
                 }
 
@@ -186,7 +237,8 @@ public class RacingAgent : Agent
             else
             {
                 // Wrong checkpoint
-                AddReward(-0.5f);
+                Debug.Log("wrong checkpoint!");
+                AddReward(-5.0f);
             }
         }
     }
