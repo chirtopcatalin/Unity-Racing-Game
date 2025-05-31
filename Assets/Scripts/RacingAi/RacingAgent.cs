@@ -32,15 +32,15 @@ public class RacingAgent : Agent
     public float minSpeedThreshold = 0.5f;
 
     [Header("Reward Settings")]
-    public float checkpointReward = 5f;
-    public float lapCompletionReward = 20f;
-    public float wallCollisionPenalty = -10f;
-    public float carCollisionPenalty = -3f;
-    public float wrongCheckpointPenalty = -8f;
-    public float stuckPenalty = -25f;
-    public float speedRewardMultiplier = 0.01f;
-    public float proximityRewardMultiplier = 0.1f;
-    public float collisionStayPenalty = -0.1f;
+    public float checkpointReward = 0.5f;
+    public float lapCompletionReward = 2f;
+    public float wallCollisionPenalty = -1f;
+    public float carCollisionPenalty = -0.6f;
+    public float wrongCheckpointPenalty = -0.8f;
+    public float stuckPenalty = -4f;
+    public float speedRewardMultiplier = 0.0015f;
+    public float proximityRewardMultiplier = 0.02f;
+    public float collisionStayPenalty = -0.01f;
 
     [Header("Unstuck Settings")]
     public float carSpawnCheckRadius = 2.5f;
