@@ -1,4 +1,3 @@
-// RacingAgent.cs
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.MLAgents;
@@ -12,10 +11,11 @@ public class RacingAgent : Agent
     private List<GameObject> orderedGoals;
     private CarControllerAgent carControllerAgent;
     private Rigidbody rb;
-    private RaceManagerTraining raceManager;
+    private RaceManager raceManager;
 
     private int nextCheckpoint = 0;
     private int lapCount = 0;
+    private bool isTraining = false;
 
     [Header("Input Actions")]
     public InputActionReference acceleration;
@@ -28,17 +28,17 @@ public class RacingAgent : Agent
 
     [Header("Stuck Detection")]
     public float stuckTimeout = 6f;
-    public float movementThreshold = 1f;
+    public float movementThreshold = 0.5f;
     public float minSpeedThreshold = 0.5f;
 
     [Header("Reward Settings")]
     public float checkpointReward = 0.5f;
     public float lapCompletionReward = 2f;
-    public float wallCollisionPenalty = -1f;
-    public float carCollisionPenalty = -0.6f;
-    public float wrongCheckpointPenalty = -0.8f;
-    public float stuckPenalty = -4f;
-    public float speedRewardMultiplier = 0.0015f;
+    public float wallCollisionPenalty = -6.5f;
+    public float carCollisionPenalty = -1.5f;
+    public float wrongCheckpointPenalty = -1f;
+    public float stuckPenalty = -6f;
+    public float speedRewardMultiplier = 0.0022f;
     public float proximityRewardMultiplier = 0.02f;
     public float collisionStayPenalty = -0.01f;
 
@@ -46,6 +46,8 @@ public class RacingAgent : Agent
     public float carSpawnCheckRadius = 2.5f;
     public float carHeightOffset = 0.5f;
 
+    [Header("Game Mode Settings")]
+    public bool despawnOnRaceComplete = true;
 
     private Vector3 _lastPosition;
     private float _stuckTimer;
@@ -53,6 +55,7 @@ public class RacingAgent : Agent
     private float previousCheckpointDistance;
     private float _collisionCooldown;
     private bool _isColliding;
+    private bool _hasFinishedRace = false;
 
     // Performance tracking
     private float _episodeStartTime;
@@ -61,18 +64,21 @@ public class RacingAgent : Agent
 
     public override void Initialize()
     {
+        isTraining = Academy.Instance.IsCommunicatorOn;
+
         _lastPosition = transform.position;
         _previousFramePosition = transform.position;
         _stuckTimer = 0f;
         _lowSpeedTimer = 0f;
         _collisionCooldown = 0f;
         _isColliding = false;
+        _hasFinishedRace = false;
 
         carControllerAgent = GetComponent<CarControllerAgent>();
         trackCheckpoints = transform.parent.GetComponent<TrackCheckpoints>();
         orderedGoals = trackCheckpoints.GetCheckpoints();
         rb = GetComponent<Rigidbody>();
-        raceManager = transform.parent.GetComponent<RaceManagerTraining>();
+        raceManager = transform.parent.GetComponent<RaceManager>();
         raceManager.RegisterAgent(this);
 
         if (orderedGoals != null && orderedGoals.Count > 0)
@@ -87,6 +93,8 @@ public class RacingAgent : Agent
 
     private void FixedUpdate()
     {
+        if (!isTraining && _hasFinishedRace) return;
+
         float distanceMoved = Vector3.Distance(transform.position, _lastPosition);
         float currentSpeed = rb.linearVelocity.magnitude;
 
@@ -110,7 +118,14 @@ public class RacingAgent : Agent
 
         if (_stuckTimer >= stuckTimeout || _lowSpeedTimer >= stuckTimeout)
         {
-            UnstuckAgent();
+            if (isTraining)
+            {
+                UnstuckAgent();
+            }
+            else
+            {
+                DespawnAgent();
+            }
         }
 
         _lastPosition = transform.position;
@@ -133,9 +148,9 @@ public class RacingAgent : Agent
         _lowSpeedTimer = 0f;
         _collisionCooldown = 0f;
         _isColliding = false;
+        _hasFinishedRace = false;
         _totalDistance = 0f;
         _episodeStartTime = Time.time;
-
         orderedGoals = trackCheckpoints.GetCheckpoints();
         lapCount = 0;
         nextCheckpoint = 0;
@@ -160,8 +175,15 @@ public class RacingAgent : Agent
 
         if (orderedGoals == null || orderedGoals.Count < 2)
         {
-            Debug.LogError($"{name}: Not enough checkpoints ({orderedGoals?.Count ?? 0}) to perform unstuck logic. Ending episode for this agent.");
-            EndEpisode();
+            Debug.LogError($"{name}: Not enough checkpoints ({orderedGoals?.Count ?? 0})");
+            if (isTraining)
+            {
+                EndEpisode();
+            }
+            else
+            {
+                DespawnAgent();
+            }
             return;
         }
 
@@ -170,7 +192,14 @@ public class RacingAgent : Agent
         if (lastCheckpointIndex < 0 || lastCheckpointIndex >= orderedGoals.Count || nextCheckpoint < 0 || nextCheckpoint >= orderedGoals.Count)
         {
             Debug.LogError($"{name}: Invalid checkpoint indices for unstucking. Last: {lastCheckpointIndex}, Next: {nextCheckpoint}. Checkpoint count: {orderedGoals.Count}. Ending episode.");
-            EndEpisode();
+            if (isTraining)
+            {
+                EndEpisode();
+            }
+            else
+            {
+                DespawnAgent();
+            }
             return;
         }
 
@@ -219,7 +248,7 @@ public class RacingAgent : Agent
 
         if (!positionFound)
         {
-            Debug.LogWarning($"{name}: Could not find a clear spawn position for unstucking after {maxSpawnAttempts} attempts. Spawning at base calculated midpoint: {baseSpawnPosition}.");
+            Debug.LogWarning("Could not find a spawn position");
             finalSpawnPosition = baseSpawnPosition;
         }
 
@@ -242,22 +271,37 @@ public class RacingAgent : Agent
             previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[0].transform.position);
         }
 
-
         Debug.Log($"{name}: Agent unstuck and repositioned to {transform.position}.");
     }
 
+    private void DespawnAgent()
+    {
+        Debug.Log("Despawning agent");
+        _hasFinishedRace = true;
+
+        if (carControllerAgent != null)
+        {
+            carControllerAgent.enabled = false;
+        }
+
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;
+
+        gameObject.SetActive(false);
+    }
 
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.collider.CompareTag("wall"))
         {
-            AddReward(wallCollisionPenalty);
+            if (isTraining) AddReward(wallCollisionPenalty);
             _collisionCooldown = 1f;
             _isColliding = true;
         }
         else if (collision.collider.CompareTag("car"))
         {
-            AddReward(carCollisionPenalty);
+            if (isTraining) AddReward(carCollisionPenalty);
             _collisionCooldown = 0.5f;
             _isColliding = true;
         }
@@ -265,7 +309,7 @@ public class RacingAgent : Agent
 
     private void OnCollisionStay(Collision collision)
     {
-        if (_collisionCooldown <= 0 && (collision.collider.CompareTag("car") || collision.collider.CompareTag("wall")))
+        if (isTraining && _collisionCooldown <= 0 && (collision.collider.CompareTag("car") || collision.collider.CompareTag("wall")))
         {
             AddReward(collisionStayPenalty * Time.fixedDeltaTime);
         }
@@ -281,44 +325,69 @@ public class RacingAgent : Agent
 
     public void ResetAgent(Vector3 startingPosition, Quaternion startingRotation)
     {
-        EndEpisode();
+        if (isTraining)
+        {
+            EndEpisode();
+            rb.angularVelocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
+            transform.position = startingPosition;
+            transform.rotation = startingRotation * Quaternion.Euler(0, 180f, 0);
+        }
+        else
+        {
+            rb.angularVelocity = Vector3.zero;
+            rb.linearVelocity = Vector3.zero;
+            transform.position = startingPosition;
+            transform.rotation = startingRotation * Quaternion.Euler(0, 180f, 0);
+            _hasFinishedRace = false;
 
-        rb.angularVelocity = Vector3.zero;
-        rb.linearVelocity = Vector3.zero;
-        transform.position = startingPosition;
-        transform.rotation = startingRotation * Quaternion.Euler(0, 180f, 0);
+            if (!gameObject.activeInHierarchy)
+            {
+                gameObject.SetActive(true);
+                rb.isKinematic = false;
+                if (carControllerAgent != null)
+                {
+                    carControllerAgent.enabled = true;
+                }
+            }
+        }
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
+        if (!isTraining && _hasFinishedRace) return;
+
         carControllerAgent.GetInput(
             actions.DiscreteActions[0],
             actions.DiscreteActions[1]
         );
 
-        Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
-        float forwardVel = Mathf.Max(0, velLocal.z);
-        AddReward(speedRewardMultiplier * forwardVel * Time.fixedDeltaTime);
-
-        if (orderedGoals != null && orderedGoals.Count > 0 && nextCheckpoint < orderedGoals.Count)
+        if (isTraining)
         {
-            float currentDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
-            float delta = previousCheckpointDistance - currentDistance;
+            Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
+            float forwardVel = Mathf.Max(0, velLocal.z);
+            AddReward(speedRewardMultiplier * forwardVel * Time.fixedDeltaTime);
 
-            if (delta > 0)
+            if (orderedGoals != null && orderedGoals.Count > 0 && nextCheckpoint < orderedGoals.Count)
             {
-                AddReward(delta * proximityRewardMultiplier);
+                float currentDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
+                float delta = previousCheckpointDistance - currentDistance;
+
+                if (delta > 0)
+                {
+                    AddReward(delta * proximityRewardMultiplier);
+                }
+                previousCheckpointDistance = currentDistance;
             }
-            previousCheckpointDistance = currentDistance;
-        }
 
-        if (_isColliding && _collisionCooldown <= 0)
-        {
-            AddReward(-0.01f * Time.fixedDeltaTime);
-        }
+            if (_isColliding && _collisionCooldown <= 0)
+            {
+                AddReward(-0.01f * Time.fixedDeltaTime);
+            }
 
-        float angularVelPenalty = rb.angularVelocity.magnitude * -0.001f;
-        AddReward(angularVelPenalty * Time.fixedDeltaTime);
+            float angularVelPenalty = rb.angularVelocity.magnitude * -0.001f;
+            AddReward(angularVelPenalty * Time.fixedDeltaTime);
+        }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -337,14 +406,13 @@ public class RacingAgent : Agent
             int expectedObservationCount = 15 + (numRays * 3);
             for (int i = 0; i < expectedObservationCount; ++i)
                 sensor.AddObservation(0f);
-            Debug.LogWarning($"{name}: orderedGoals is null or empty during CollectObservations. Adding zeros.");
+            Debug.LogWarning("orderedGoals is null or empty");
             return;
         }
 
         int checkpointIndexToObserve = nextCheckpoint;
         if (checkpointIndexToObserve >= orderedGoals.Count)
             checkpointIndexToObserve = 0;
-
 
         Vector3 toCheckpointWorld = orderedGoals[checkpointIndexToObserve].transform.position - transform.position;
         Vector3 toCheckpointLocal = transform.InverseTransformDirection(toCheckpointWorld);
@@ -413,19 +481,31 @@ public class RacingAgent : Agent
             var hitGoal = other.gameObject;
             if (nextCheckpoint < orderedGoals.Count && hitGoal == orderedGoals[nextCheckpoint])
             {
-                AddReward(checkpointReward);
+                if (isTraining) AddReward(checkpointReward);
                 nextCheckpoint++;
+
                 if (nextCheckpoint >= orderedGoals.Count)
                 {
                     lapCount++;
                     nextCheckpoint = 0;
-                    AddReward(lapCompletionReward);
+                    if (isTraining) AddReward(lapCompletionReward);
+
                     if (lapCount >= 3)
                     {
-                        float timeBonus = Mathf.Max(0, 50f - (Time.time - _episodeStartTime) * 0.1f);
-                        AddReward(timeBonus);
-                        Debug.Log($"{name}: Race completed! Time bonus: {timeBonus}");
-                        raceManager.ResetAllAgents();
+                        if (isTraining)
+                        {
+                            float timeBonus = Mathf.Max(0, 50f - (Time.time - _episodeStartTime) * 0.1f);
+                            AddReward(timeBonus);
+                            raceManager.ResetAllAgents();
+                        }
+                        else
+                        {
+                            Debug.Log("Race completed(game mode)");
+                            if (despawnOnRaceComplete)
+                            {
+                                DespawnAgent();
+                            }
+                        }
                     }
                 }
 
@@ -439,7 +519,7 @@ public class RacingAgent : Agent
                 }
 
                 int overtaken = raceManager.UpdateAgentProgress(this, lapCount, nextCheckpoint);
-                if (overtaken > 0)
+                if (isTraining && overtaken > 0)
                 {
                     float overtakeBonus = overtaken * 2f;
                     AddReward(overtakeBonus);
@@ -458,10 +538,25 @@ public class RacingAgent : Agent
                 }
                 if (isAValidCheckpoint && nextCheckpoint < orderedGoals.Count)
                 {
-                    Debug.LogWarning($"{name}: Hit wrong checkpoint! Expected {orderedGoals[nextCheckpoint].name}, but hit {hitGoal.name}.");
-                    AddReward(wrongCheckpointPenalty);
+                    Debug.LogWarning($"Hit wrong checkpoint!");
+                    if (isTraining) AddReward(wrongCheckpointPenalty);
                 }
             }
         }
+    }
+
+    public bool HasFinishedRace()
+    {
+        return _hasFinishedRace;
+    }
+
+    public int GetCurrentLap()
+    {
+        return lapCount;
+    }
+
+    public int GetCurrentCheckpoint()
+    {
+        return nextCheckpoint;
     }
 }

@@ -17,18 +17,18 @@ public class CarCheckpointTracker : MonoBehaviour
         if (hitGoal == orderedGoals[nextCheckpoint])
         {
             nextCheckpoint++;
-            Debug.Log($"{name} hit checkpoint #{nextCheckpoint}");
+            //Debug.Log($"{name} hit checkpoint #{nextCheckpoint}");
 
             if (nextCheckpoint >= orderedGoals.Count)
             {
                 lapCount++;
-                Debug.Log($"{name} completed lap {lapCount}!");
+                //Debug.Log($"{name} completed lap {lapCount}!");
                 nextCheckpoint = 0;
             }
         }
         else
         {
-            Debug.Log($"{name} hit WRONG checkpoint. Expected {orderedGoals[nextCheckpoint].name}.");
+            //Debug.Log($"{name} hit WRONG checkpoint. Expected {orderedGoals[nextCheckpoint].name}.");
         }
     }
     private void Start()

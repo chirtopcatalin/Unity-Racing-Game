@@ -1,12 +1,12 @@
-﻿// RaceManagerTraining.cs
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class RaceManagerTraining : MonoBehaviour
+public class RaceManager : MonoBehaviour
 {
 
     private List<RacingAgent> agents = new List<RacingAgent>();
     private Dictionary<RacingAgent, int> progress = new Dictionary<RacingAgent, int>();
+
     private List<Vector3> startingPositions = new List<Vector3>();
     private Transform startFinish;
     private TrackCheckpoints trackCheckpoints;
@@ -61,6 +61,20 @@ public class RaceManagerTraining : MonoBehaviour
         for (int i = 0; i < agents.Count; i++)
         {
             agents[i].ResetAgent(startingPositions[i], startFinish.rotation);
+        }
+    }
+
+    public void ResetAgent(RacingAgent agent)
+    {
+        if (agents.Contains(agent))
+        {
+            int index = agents.IndexOf(agent);
+            agent.ResetAgent(startingPositions[index], startFinish.rotation);
+            progress[agent] = 0;
+        }
+        else
+        {
+            Debug.LogWarning("Agent not registered in RaceManager.");
         }
     }
 }
