@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class CarCheckpointTracker : MonoBehaviour
 {
-    public TrackCheckpoints trackCheckpointsReference;
+    public TrackCheckpoints trackCheckpoints;
 
     private List<GameObject> orderedGoals;
 
@@ -33,9 +33,9 @@ public class CarCheckpointTracker : MonoBehaviour
 
     private void Start()
     {
-        if (trackCheckpointsReference != null)
+        if (trackCheckpoints != null)
         {
-            orderedGoals = trackCheckpointsReference.GetCheckpoints();
+            orderedGoals = trackCheckpoints.GetCheckpoints();
             if (orderedGoals == null || orderedGoals.Count == 0)
             {
                 Debug.LogError($"no checkpoint foud.");

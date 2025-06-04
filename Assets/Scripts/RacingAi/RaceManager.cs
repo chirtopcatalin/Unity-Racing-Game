@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Linq;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class RaceManager : MonoBehaviour
 {
@@ -16,6 +17,11 @@ public class RaceManager : MonoBehaviour
     private Transform startFinish;
     private TrackCheckpoints trackCheckpoints;
     private int totalCheckpoints;
+
+    public GameObject raceFinishedPanel;
+    public TMP_Text raceFinishedMessageText;
+    public Button mainMenuButton;
+    private bool playerHasFinishedRace = false;
 
     private bool isCountdownActive = true;
     private float countdownTimer = 5f;
@@ -40,6 +46,10 @@ public class RaceManager : MonoBehaviour
 
     private void Start()
     {
+        raceFinishedPanel.SetActive(false);
+        mainMenuButton.gameObject.SetActive(false);
+        raceFinishedMessageText.text = string.Empty;
+
         trackCheckpoints = GetComponent<TrackCheckpoints>();
         if (trackCheckpoints == null)
         {
@@ -91,6 +101,35 @@ public class RaceManager : MonoBehaviour
                 }
             }
         }
+
+        if (!playerHasFinishedRace && playerTracker != null && playerTracker.lapCount >= 3)
+        {
+            playerHasFinishedRace = true;
+            ShowRaceFinishedScreen();
+        }
+    }
+
+    void ShowRaceFinishedScreen()
+    {
+        if (raceFinishedPanel != null && raceFinishedMessageText != null)
+        {
+            int playerRank = GetPlayerRank();
+            raceFinishedMessageText.text = $"Race Finished!\nYour Place: {playerRank}";
+            raceFinishedPanel.SetActive(true);
+            mainMenuButton.gameObject.SetActive(true);
+
+            Time.timeScale = 0f;
+            if (playerTracker != null && playerTracker.GetComponent<CarController>() != null)
+            {
+                playerTracker.GetComponent<CarController>().enabled = false;
+            }
+        }
+    }
+
+    public void GoToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu");
     }
 
     public bool IsCountdownActive()
