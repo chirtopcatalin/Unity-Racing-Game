@@ -49,140 +49,255 @@ public class RacingAgent : Agent
     [Header("Game Mode Settings")]
     public bool despawnOnRaceComplete = true;
 
-    private Vector3 _lastPosition;
-    private float _stuckTimer;
-    private float _lowSpeedTimer;
+    private Vector3 lastPosition;
+    private float stuckTimer;
+    private float lowSpeedTimer;
     private float previousCheckpointDistance;
-    private float _collisionCooldown;
-    private bool _isColliding;
-    private bool _hasFinishedRace = false;
+    private float collisionCooldown;
+    private bool isColliding;
+    private bool hasFinishedRace = false;
 
-    // Performance tracking
-    private float _episodeStartTime;
-    private float _totalDistance;
-    private Vector3 _previousFramePosition;
+    private float episodeStartTime;
+    private float totalDistance;
+    private Vector3 previousFramePosition;
 
     public override void Initialize()
     {
         isTraining = Academy.Instance.IsCommunicatorOn;
 
-        _lastPosition = transform.position;
-        _previousFramePosition = transform.position;
-        _stuckTimer = 0f;
-        _lowSpeedTimer = 0f;
-        _collisionCooldown = 0f;
-        _isColliding = false;
-        _hasFinishedRace = false;
-
         carControllerAgent = GetComponent<CarControllerAgent>();
-        trackCheckpoints = transform.parent.GetComponent<TrackCheckpoints>();
-        orderedGoals = trackCheckpoints.GetCheckpoints();
         rb = GetComponent<Rigidbody>();
-        raceManager = transform.parent.GetComponent<RaceManager>();
-        raceManager.RegisterAgent(this);
 
-        if (orderedGoals != null && orderedGoals.Count > 0)
+        if (transform.parent != null)
         {
-            int initialCheckpointIndex = Mathf.Clamp(nextCheckpoint, 0, orderedGoals.Count - 1);
-            if (orderedGoals.Count > initialCheckpointIndex && initialCheckpointIndex >= 0)
-            {
-                previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[initialCheckpointIndex].transform.position);
-            }
+            raceManager = transform.parent.GetComponent<RaceManager>();
+            trackCheckpoints = transform.parent.GetComponent<TrackCheckpoints>();
+        }
+
+        if (raceManager == null)
+        {
+            Debug.LogError("raceManager not found");
+        }
+        else
+        {
+            raceManager.RegisterAgent(this);
+        }
+
+        if (trackCheckpoints == null)
+        {
+            Debug.LogError("TrackCheckpoints not found");
+        }
+        else
+        {
+            orderedGoals = trackCheckpoints.GetCheckpoints();
+        }
+
+        lastPosition = transform.position;
+        previousFramePosition = transform.position;
+        stuckTimer = 0f;
+        lowSpeedTimer = 0f;
+        collisionCooldown = 0f;
+        isColliding = false;
+        hasFinishedRace = false;
+
+        if (orderedGoals != null && orderedGoals.Count > 0 && nextCheckpoint < orderedGoals.Count)
+        {
+            previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
         }
     }
 
     private void FixedUpdate()
     {
-        if (!isTraining && _hasFinishedRace) return;
+        if (raceManager != null && raceManager.IsCountdownActive())
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            lastPosition = transform.position;
+            lowSpeedTimer = 0f;
+            stuckTimer = 0f;
+            return;
+        }
 
-        float distanceMoved = Vector3.Distance(transform.position, _lastPosition);
+        if (!isTraining && hasFinishedRace) return;
+
+        float distanceMoved = Vector3.Distance(transform.position, lastPosition);
         float currentSpeed = rb.linearVelocity.magnitude;
 
         if (distanceMoved < movementThreshold * Time.fixedDeltaTime)
         {
-            _stuckTimer += Time.fixedDeltaTime;
+            stuckTimer += Time.fixedDeltaTime;
         }
         else
         {
-            _stuckTimer = 0f;
+            stuckTimer = 0f;
         }
 
         if (currentSpeed < minSpeedThreshold)
         {
-            _lowSpeedTimer += Time.fixedDeltaTime;
+            lowSpeedTimer += Time.fixedDeltaTime;
         }
         else
         {
-            _lowSpeedTimer = 0f;
+            lowSpeedTimer = 0f;
         }
 
-        if (_stuckTimer >= stuckTimeout || _lowSpeedTimer >= stuckTimeout)
+        if (stuckTimer >= stuckTimeout || lowSpeedTimer >= stuckTimeout)
         {
-            if (isTraining)
-            {
-                UnstuckAgent();
-            }
-            else
-            {
-                DespawnAgent();
-            }
+            Debug.LogWarning("agent stuck");
+            UnstuckAgent();
         }
 
-        _lastPosition = transform.position;
+        lastPosition = transform.position;
 
-        if (_collisionCooldown > 0)
+        if (collisionCooldown > 0)
         {
-            _collisionCooldown -= Time.fixedDeltaTime;
+            collisionCooldown -= Time.fixedDeltaTime;
         }
 
-        _totalDistance += Vector3.Distance(transform.position, _previousFramePosition);
-        _previousFramePosition = transform.position;
+        totalDistance += Vector3.Distance(transform.position, previousFramePosition);
+        previousFramePosition = transform.position;
     }
 
     public override void OnEpisodeBegin()
     {
-        Debug.Log($"{name}: New episode starting.");
-        _lastPosition = transform.position;
-        _previousFramePosition = transform.position;
-        _stuckTimer = 0f;
-        _lowSpeedTimer = 0f;
-        _collisionCooldown = 0f;
-        _isColliding = false;
-        _hasFinishedRace = false;
-        _totalDistance = 0f;
-        _episodeStartTime = Time.time;
-        orderedGoals = trackCheckpoints.GetCheckpoints();
+        Debug.Log("new episode");
+        lastPosition = transform.position;
+        previousFramePosition = transform.position;
+        stuckTimer = 0f;
+        lowSpeedTimer = 0f;
+        collisionCooldown = 0f;
+        isColliding = false;
+        hasFinishedRace = false;
+        totalDistance = 0f;
+        episodeStartTime = Time.time;
+
+        lapCount = 0;
+        nextCheckpoint = 0;
+
+        if (trackCheckpoints != null)
+        {
+            orderedGoals = trackCheckpoints.GetCheckpoints();
+            if (orderedGoals != null && orderedGoals.Count > 0)
+            {
+                previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
+            }
+        }
+
+        if (raceManager == null)
+        {
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+    }
+
+    public override void OnActionReceived(ActionBuffers actions)
+    {
+        if ((raceManager != null && raceManager.IsCountdownActive()) || (!isTraining && hasFinishedRace))
+        {
+            if (carControllerAgent != null)
+            {
+                carControllerAgent.GetInput(1, 1);
+            }
+            return;
+        }
+
+        if (carControllerAgent != null)
+        {
+            carControllerAgent.GetInput(
+                actions.DiscreteActions[0],
+                actions.DiscreteActions[1]
+            );
+        }
+        else
+        {
+            return;
+        }
+
+        if (isTraining)
+        {
+            Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
+            float forwardVel = Mathf.Max(0, velLocal.z);
+            AddReward(speedRewardMultiplier * forwardVel * Time.fixedDeltaTime);
+
+            if (orderedGoals != null && orderedGoals.Count > 0 && nextCheckpoint < orderedGoals.Count)
+            {
+                float currentDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
+                float delta = previousCheckpointDistance - currentDistance;
+
+                if (delta > 0)
+                {
+                    AddReward(delta * proximityRewardMultiplier);
+                }
+                previousCheckpointDistance = currentDistance;
+            }
+            if (isColliding && collisionCooldown <= 0)
+            {
+                AddReward(collisionStayPenalty * Time.fixedDeltaTime);
+            }
+
+            float angularVelPenalty = rb.angularVelocity.magnitude * -0.001f;
+            AddReward(angularVelPenalty * Time.fixedDeltaTime);
+        }
+    }
+
+    public void ResetAgent(Vector3 startingPosition, Quaternion startingRotation)
+    {
+        transform.position = startingPosition;
+        transform.rotation = startingRotation;
+
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+
+        hasFinishedRace = false;
         lapCount = 0;
         nextCheckpoint = 0;
 
         if (orderedGoals != null && orderedGoals.Count > 0)
         {
-            int initialCheckpointIndex = Mathf.Clamp(nextCheckpoint, 0, orderedGoals.Count - 1);
-            if (orderedGoals.Count > initialCheckpointIndex && initialCheckpointIndex >= 0)
+            previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[0].transform.position);
+        }
+
+        stuckTimer = 0f;
+        lowSpeedTimer = 0f;
+        collisionCooldown = 0f;
+        isColliding = false;
+
+        if (isTraining)
+        {
+            EndEpisode();
+        }
+        else
+        {
+            if (!gameObject.activeInHierarchy)
             {
-                previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[initialCheckpointIndex].transform.position);
+                gameObject.SetActive(true);
+            }
+            if (rb.isKinematic)
+            {
+                rb.isKinematic = false;
+            }
+            if (carControllerAgent != null && !carControllerAgent.enabled)
+            {
+                carControllerAgent.enabled = true;
             }
         }
     }
-
     private void UnstuckAgent()
     {
-        Debug.LogWarning($"{name}: Agent got stuck, attempting to unstuck.");
+        Debug.LogWarning("agent stuck");
         AddReward(stuckPenalty);
 
-        _stuckTimer = 0f;
-        _lowSpeedTimer = 0f;
+        stuckTimer = 0f;
+        lowSpeedTimer = 0f;
 
         if (orderedGoals == null || orderedGoals.Count < 2)
         {
-            Debug.LogError($"{name}: Not enough checkpoints ({orderedGoals?.Count ?? 0})");
+            Debug.LogError("not enough checkpoints");
             if (isTraining)
             {
                 EndEpisode();
-            }
-            else
-            {
-                DespawnAgent();
             }
             return;
         }
@@ -191,7 +306,6 @@ public class RacingAgent : Agent
 
         if (lastCheckpointIndex < 0 || lastCheckpointIndex >= orderedGoals.Count || nextCheckpoint < 0 || nextCheckpoint >= orderedGoals.Count)
         {
-            Debug.LogError($"{name}: Invalid checkpoint indices for unstucking. Last: {lastCheckpointIndex}, Next: {nextCheckpoint}. Checkpoint count: {orderedGoals.Count}. Ending episode.");
             if (isTraining)
             {
                 EndEpisode();
@@ -232,7 +346,6 @@ public class RacingAgent : Agent
                 if (hitCollider.gameObject.CompareTag("car") && hitCollider.gameObject != this.gameObject)
                 {
                     occupied = true;
-                    Debug.Log($"{name}: Unstuck spawn attempt {attempt} at {currentTestPosition} is occupied by {hitCollider.name}.");
                     break;
                 }
             }
@@ -241,14 +354,12 @@ public class RacingAgent : Agent
             {
                 finalSpawnPosition = currentTestPosition;
                 positionFound = true;
-                Debug.Log($"{name}: Found clear unstuck spawn position at attempt {attempt}: {finalSpawnPosition}");
                 break;
             }
         }
 
         if (!positionFound)
         {
-            Debug.LogWarning("Could not find a spawn position");
             finalSpawnPosition = baseSpawnPosition;
         }
 
@@ -271,13 +382,13 @@ public class RacingAgent : Agent
             previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[0].transform.position);
         }
 
-        Debug.Log($"{name}: Agent unstuck and repositioned to {transform.position}.");
+        Debug.Log($"agent unstuck and repositioned to {transform.position}.");
     }
 
     private void DespawnAgent()
     {
-        Debug.Log("Despawning agent");
-        _hasFinishedRace = true;
+        Debug.Log("despawned agent");
+        hasFinishedRace = true;
 
         if (carControllerAgent != null)
         {
@@ -290,106 +401,6 @@ public class RacingAgent : Agent
 
         gameObject.SetActive(false);
     }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (collision.collider.CompareTag("wall"))
-        {
-            if (isTraining) AddReward(wallCollisionPenalty);
-            _collisionCooldown = 1f;
-            _isColliding = true;
-        }
-        else if (collision.collider.CompareTag("car"))
-        {
-            if (isTraining) AddReward(carCollisionPenalty);
-            _collisionCooldown = 0.5f;
-            _isColliding = true;
-        }
-    }
-
-    private void OnCollisionStay(Collision collision)
-    {
-        if (isTraining && _collisionCooldown <= 0 && (collision.collider.CompareTag("car") || collision.collider.CompareTag("wall")))
-        {
-            AddReward(collisionStayPenalty * Time.fixedDeltaTime);
-        }
-    }
-
-    private void OnCollisionExit(Collision collision)
-    {
-        if (collision.collider.CompareTag("car") || collision.collider.CompareTag("wall"))
-        {
-            _isColliding = false;
-        }
-    }
-
-    public void ResetAgent(Vector3 startingPosition, Quaternion startingRotation)
-    {
-        if (isTraining)
-        {
-            EndEpisode();
-            rb.angularVelocity = Vector3.zero;
-            rb.linearVelocity = Vector3.zero;
-            transform.position = startingPosition;
-            transform.rotation = startingRotation * Quaternion.Euler(0, 180f, 0);
-        }
-        else
-        {
-            rb.angularVelocity = Vector3.zero;
-            rb.linearVelocity = Vector3.zero;
-            transform.position = startingPosition;
-            transform.rotation = startingRotation * Quaternion.Euler(0, 180f, 0);
-            _hasFinishedRace = false;
-
-            if (!gameObject.activeInHierarchy)
-            {
-                gameObject.SetActive(true);
-                rb.isKinematic = false;
-                if (carControllerAgent != null)
-                {
-                    carControllerAgent.enabled = true;
-                }
-            }
-        }
-    }
-
-    public override void OnActionReceived(ActionBuffers actions)
-    {
-        if (!isTraining && _hasFinishedRace) return;
-
-        carControllerAgent.GetInput(
-            actions.DiscreteActions[0],
-            actions.DiscreteActions[1]
-        );
-
-        if (isTraining)
-        {
-            Vector3 velLocal = transform.InverseTransformDirection(rb.linearVelocity);
-            float forwardVel = Mathf.Max(0, velLocal.z);
-            AddReward(speedRewardMultiplier * forwardVel * Time.fixedDeltaTime);
-
-            if (orderedGoals != null && orderedGoals.Count > 0 && nextCheckpoint < orderedGoals.Count)
-            {
-                float currentDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
-                float delta = previousCheckpointDistance - currentDistance;
-
-                if (delta > 0)
-                {
-                    AddReward(delta * proximityRewardMultiplier);
-                }
-                previousCheckpointDistance = currentDistance;
-            }
-
-            if (_isColliding && _collisionCooldown <= 0)
-            {
-                AddReward(-0.01f * Time.fixedDeltaTime);
-            }
-
-            float angularVelPenalty = rb.angularVelocity.magnitude * -0.001f;
-            AddReward(angularVelPenalty * Time.fixedDeltaTime);
-        }
-    }
-
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         var d = actionsOut.DiscreteActions;
@@ -468,12 +479,16 @@ public class RacingAgent : Agent
             sensor.AddObservation(obsDistToCar / rayMaxDistance);
         }
 
-        sensor.AddObservation(_isColliding ? 1f : 0f);
-        sensor.AddObservation(_collisionCooldown > 0 ? 1f : 0f);
+        sensor.AddObservation(isColliding ? 1f : 0f);
+        sensor.AddObservation(collisionCooldown > 0 ? 1f : 0f);
     }
+
 
     private void OnTriggerEnter(Collider other)
     {
+        if (raceManager != null && raceManager.IsCountdownActive()) return;
+        if (!isTraining && hasFinishedRace) return;
+
         if (other.CompareTag("goal"))
         {
             if (orderedGoals == null || orderedGoals.Count == 0) return;
@@ -492,37 +507,39 @@ public class RacingAgent : Agent
 
                     if (lapCount >= 3)
                     {
+                        Debug.Log($"{name} completed the race!");
+                        hasFinishedRace = true;
                         if (isTraining)
                         {
-                            float timeBonus = Mathf.Max(0, 50f - (Time.time - _episodeStartTime) * 0.1f);
+                            float timeBonus = Mathf.Max(0, 50f - (Time.time - episodeStartTime) * 0.1f);
                             AddReward(timeBonus);
-                            raceManager.ResetAllAgents();
+                            EndEpisode();
                         }
                         else
                         {
-                            Debug.Log("Race completed(game mode)");
                             if (despawnOnRaceComplete)
                             {
                                 DespawnAgent();
                             }
                         }
+                        return;
                     }
                 }
 
-                if (orderedGoals.Count > 0)
+                if (orderedGoals.Count > 0 && nextCheckpoint < orderedGoals.Count)
                 {
-                    int currentNextCheckpointIndex = Mathf.Clamp(nextCheckpoint, 0, orderedGoals.Count - 1);
-                    if (orderedGoals.Count > currentNextCheckpointIndex)
+                    previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
+                }
+
+
+                if (raceManager != null)
+                {
+                    int overtaken = raceManager.UpdateAgentProgress(this, lapCount, nextCheckpoint);
+                    if (isTraining && overtaken > 0)
                     {
-                        previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[currentNextCheckpointIndex].transform.position);
+                        float overtakeBonus = overtaken * 2f;
+                        AddReward(overtakeBonus);
                     }
-                }
-
-                int overtaken = raceManager.UpdateAgentProgress(this, lapCount, nextCheckpoint);
-                if (isTraining && overtaken > 0)
-                {
-                    float overtakeBonus = overtaken * 2f;
-                    AddReward(overtakeBonus);
                 }
             }
             else
@@ -538,16 +555,35 @@ public class RacingAgent : Agent
                 }
                 if (isAValidCheckpoint && nextCheckpoint < orderedGoals.Count)
                 {
-                    Debug.LogWarning($"Hit wrong checkpoint!");
+                    Debug.LogWarning("hit wrong checkpoint!");
                     if (isTraining) AddReward(wrongCheckpointPenalty);
                 }
             }
         }
     }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (raceManager != null && raceManager.IsCountdownActive()) return;
+        if (!isTraining && hasFinishedRace) return;
+
+
+        if (collision.collider.CompareTag("wall"))
+        {
+            if (isTraining) AddReward(wallCollisionPenalty);
+            collisionCooldown = 1f;
+            isColliding = true;
+        }
+        else if (collision.collider.CompareTag("car"))
+        {
+            if (isTraining) AddReward(carCollisionPenalty);
+            collisionCooldown = 0.5f;
+            isColliding = true;
+        }
+    }
     public bool HasFinishedRace()
     {
-        return _hasFinishedRace;
+        return hasFinishedRace;
     }
 
     public int GetCurrentLap()

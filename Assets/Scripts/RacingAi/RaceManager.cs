@@ -1,52 +1,131 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+using UnityEngine.UI;
+using TMPro;
 
 public class RaceManager : MonoBehaviour
 {
-
     private List<RacingAgent> agents = new List<RacingAgent>();
-    private Dictionary<RacingAgent, int> progress = new Dictionary<RacingAgent, int>();
+    private Dictionary<RacingAgent, int> agentProgress = new Dictionary<RacingAgent, int>();
+
+    public CarCheckpointTracker playerTracker;
+    public TMP_Text countdownText;
 
     private List<Vector3> startingPositions = new List<Vector3>();
     private Transform startFinish;
     private TrackCheckpoints trackCheckpoints;
     private int totalCheckpoints;
 
+    private bool isCountdownActive = true;
+    private float countdownTimer = 5f;
+
+    public class CarPositionInfo
+    {
+        public string Name { get; set; }
+        public int LapCount { get; set; }
+        public int NextCheckpoint { get; set; }
+        public float DistanceToNextCheckpoint { get; set; }
+        public int OverallProgress { get; set; }
+
+        public CarPositionInfo(string name, int laps, int checkpoint, float distance, int totalCheckpointsInLap)
+        {
+            Name = name;
+            LapCount = laps;
+            NextCheckpoint = checkpoint;
+            DistanceToNextCheckpoint = distance;
+            OverallProgress = laps * totalCheckpointsInLap + checkpoint;
+        }
+    }
+
     private void Start()
     {
         trackCheckpoints = GetComponent<TrackCheckpoints>();
-        totalCheckpoints = trackCheckpoints.GetCheckpoints().Count;
+        if (trackCheckpoints == null)
+        {
+            Debug.LogError("TrackCheckpoints not found");
+            return;
+        }
+
+        List<GameObject> checkpoints = trackCheckpoints.GetCheckpoints();
+        if (checkpoints != null)
+        {
+            totalCheckpoints = checkpoints.Count;
+        }
 
         startFinish = transform.Find("start_finish");
-        foreach (Transform child in startFinish)
+        if (startFinish != null)
         {
-            if (child.name == "startingPosition")
+            foreach (Transform child in startFinish)
             {
-                startingPositions.Add(child.position);
+                if (child.name == "startingPosition")
+                {
+                    startingPositions.Add(child.position);
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("start_finish object not found");
+        }
+    }
+
+    private void Update()
+    {
+        if (isCountdownActive)
+        {
+            countdownTimer -= Time.deltaTime;
+
+            if (countdownText != null)
+            {
+                int secondsRemaining = Mathf.CeilToInt(countdownTimer);
+                countdownText.text = secondsRemaining.ToString();
+            }
+
+            if (countdownTimer <= 0f)
+            {
+                isCountdownActive = false;
+                if (countdownText != null)
+                {
+                    countdownText.gameObject.SetActive(false);
+                }
             }
         }
     }
 
-    public void RegisterAgent(RacingAgent agent)
+    public bool IsCountdownActive()
     {
-        agents.Add(agent);
-        progress[agent] = 0;
+        return isCountdownActive;
     }
 
-    public int UpdateAgentProgress(RacingAgent agent, int lapCount, int nextCheckpoint)
+    public void RegisterAgent(RacingAgent agent)
     {
-        int oldProg = progress[agent];
-        int newProg = lapCount * totalCheckpoints + nextCheckpoint;
-        progress[agent] = newProg;
+        if (!agents.Contains(agent))
+        {
+            agents.Add(agent);
+            agentProgress[agent] = 0;
+        }
+    }
+
+    public int UpdateAgentProgress(RacingAgent agent, int lapCount, int nextCheckpointIndex)
+    {
+        if (totalCheckpoints == 0) return 0;
+
+        int oldProg = agentProgress.ContainsKey(agent) ? agentProgress[agent] : 0;
+        int newProg = lapCount * totalCheckpoints + nextCheckpointIndex;
+        agentProgress[agent] = newProg;
 
         int overtakes = 0;
-        foreach (var other in agents)
+        foreach (var otherAgent in agents)
         {
-            if (other == agent) continue;
-            int otherProg = progress[other];
-            if (oldProg <= otherProg && newProg > otherProg)
+            if (otherAgent == agent) continue;
+
+            if (agentProgress.TryGetValue(otherAgent, out int otherProgValue))
             {
-                overtakes++;
+                if (oldProg <= otherProgValue && newProg > otherProgValue)
+                {
+                    overtakes++;
+                }
             }
         }
         return overtakes;
@@ -56,11 +135,19 @@ public class RaceManager : MonoBehaviour
     {
         foreach (var agent in agents)
         {
-            progress[agent] = 0;
+            agentProgress[agent] = 0;
         }
         for (int i = 0; i < agents.Count; i++)
         {
-            agents[i].ResetAgent(startingPositions[i], startFinish.rotation);
+            if (i < startingPositions.Count)
+            {
+                agents[i].ResetAgent(startingPositions[i], startFinish != null ? startFinish.rotation : Quaternion.identity);
+            }
+        }
+
+        if (playerTracker != null)
+        {
+            playerTracker.ResetProgress();
         }
     }
 
@@ -69,12 +156,74 @@ public class RaceManager : MonoBehaviour
         if (agents.Contains(agent))
         {
             int index = agents.IndexOf(agent);
-            agent.ResetAgent(startingPositions[index], startFinish.rotation);
-            progress[agent] = 0;
+            Vector3 startPos = (index < startingPositions.Count) ? startingPositions[index] : transform.position;
+            Quaternion startRot = (startFinish != null) ? startFinish.rotation : Quaternion.identity;
+            agent.ResetAgent(startPos, startRot);
+            agentProgress[agent] = 0;
         }
         else
         {
-            Debug.LogWarning("Agent not registered in RaceManager.");
+            Debug.LogWarning($"Agent {agent.name} not registered in RaceManager.");
         }
+    }
+
+    public List<CarPositionInfo> GetCurrentPositions()
+    {
+        if (totalCheckpoints == 0)
+        {
+            Debug.LogWarning("totalCheckpoints == 0");
+            return new List<CarPositionInfo>();
+        }
+
+        var standings = new List<CarPositionInfo>();
+
+        foreach (var agent in agents)
+        {
+            if (agent == null) continue;
+
+            int agentLaps = agent.GetCurrentLap();
+            int agentNextCheckpoint = agent.GetCurrentCheckpoint();
+            float agentDistance = GetDistanceToNextCheckpoint(agent.transform, agentNextCheckpoint);
+
+            standings.Add(new CarPositionInfo(agent.name, agentLaps, agentNextCheckpoint, agentDistance, totalCheckpoints));
+        }
+
+        if (playerTracker != null)
+        {
+            float playerDistance = GetDistanceToNextCheckpoint(playerTracker.transform, playerTracker.nextCheckpoint);
+            standings.Add(new CarPositionInfo("Player", playerTracker.lapCount, playerTracker.nextCheckpoint, playerDistance, totalCheckpoints));
+        }
+
+        standings = standings.OrderByDescending(s => s.OverallProgress)
+                             .ThenBy(s => s.DistanceToNextCheckpoint)
+                             .ToList();
+
+        return standings;
+    }
+
+    private float GetDistanceToNextCheckpoint(Transform participantTransform, int checkpointIndex)
+    {
+        if (trackCheckpoints == null || trackCheckpoints.GetCheckpoints() == null || trackCheckpoints.GetCheckpoints().Count == 0) return 9999f;
+        List<GameObject> checkpoints = trackCheckpoints.GetCheckpoints();
+
+        return Vector3.Distance(participantTransform.position, checkpoints[checkpointIndex].transform.position);
+    }
+
+    public int GetPlayerRank()
+    {
+        if (playerTracker == null)
+        {
+            return -1;
+        }
+
+        var standings = GetCurrentPositions();
+        for (int i = 0; i < standings.Count; i++)
+        {
+            if (standings[i].Name == "Player")
+            {
+                return i + 1;
+            }
+        }
+        return -1;
     }
 }

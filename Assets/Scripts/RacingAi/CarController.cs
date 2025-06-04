@@ -46,6 +46,7 @@ public class CarController : MonoBehaviour
     public TMP_Text gearText;
     public TMP_Text RPMText;
     public TMP_Text speedText;
+    public TMP_Text rankText;
 
     private float accelerationInput;
     private float steeringInput;
@@ -84,9 +85,11 @@ public class CarController : MonoBehaviour
     private float downForceValue = 10f;
 
     private WheelFrictionCurve forwardFriction, sidewaysFriction;
+    private RaceManager raceManager;
 
     void Start()
     {
+        raceManager = this.transform.parent.GetComponent<RaceManager>();
         rb = GetComponent<Rigidbody>();
         accelerationInput = 0f;
         steeringInput = 0f;
@@ -100,8 +103,12 @@ public class CarController : MonoBehaviour
     {
         radius = 4 + KPH / 25;
         UpdateGearDisplay();
-        GetInput();
         AnimateWheels();
+
+        if (!raceManager.IsCountdownActive())
+        {
+            GetInput();
+        }
     }
 
     void FixedUpdate()
@@ -116,7 +123,8 @@ public class CarController : MonoBehaviour
     {
         RPMText.text = "RPM: " + engineRPM.ToString("F0");
         gearText.text = "Gear:" + (gearNum+1).ToString("F0");
-        speedText.text = KPH.ToString("F1");
+        speedText.text = "Speed: " + KPH.ToString("F1") + "KM/H";
+        rankText.text = "Place: " + raceManager.GetPlayerRank().ToString();
     }
 
     void GetInput()
