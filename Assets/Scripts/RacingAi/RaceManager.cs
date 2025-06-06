@@ -10,12 +10,11 @@ public class RaceManager : MonoBehaviour
     private List<RacingAgent> agents = new List<RacingAgent>();
     private Dictionary<RacingAgent, int> agentProgress = new Dictionary<RacingAgent, int>();
 
-    public CarCheckpointTracker playerTracker;
+    public CarCheckpointTracker playerCheckpointTracker;
     public TMP_Text countdownText;
 
     private List<Vector3> startingPositions = new List<Vector3>();
     private Transform startFinish;
-    private TrackCheckpoints trackCheckpoints;
     private int totalCheckpoints;
 
     public GameObject raceFinishedPanel;
@@ -50,14 +49,7 @@ public class RaceManager : MonoBehaviour
         mainMenuButton.gameObject.SetActive(false);
         raceFinishedMessageText.text = string.Empty;
 
-        trackCheckpoints = GetComponent<TrackCheckpoints>();
-        if (trackCheckpoints == null)
-        {
-            Debug.LogError("TrackCheckpoints not found");
-            return;
-        }
-
-        List<GameObject> checkpoints = trackCheckpoints.GetCheckpoints();
+        List<GameObject> checkpoints = GetCheckpoints();
         if (checkpoints != null)
         {
             totalCheckpoints = checkpoints.Count;
@@ -102,7 +94,7 @@ public class RaceManager : MonoBehaviour
             }
         }
 
-        if (!playerHasFinishedRace && playerTracker != null && playerTracker.lapCount >= 3)
+        if (!playerHasFinishedRace && playerCheckpointTracker != null && playerCheckpointTracker.lapCount >= 3)
         {
             playerHasFinishedRace = true;
             ShowRaceFinishedScreen();
@@ -119,9 +111,9 @@ public class RaceManager : MonoBehaviour
             mainMenuButton.gameObject.SetActive(true);
 
             Time.timeScale = 0f;
-            if (playerTracker != null && playerTracker.GetComponent<CarController>() != null)
+            if (playerCheckpointTracker != null && playerCheckpointTracker.GetComponent<CarController>() != null)
             {
-                playerTracker.GetComponent<CarController>().enabled = false;
+                playerCheckpointTracker.GetComponent<CarController>().enabled = false;
             }
         }
     }
@@ -184,9 +176,9 @@ public class RaceManager : MonoBehaviour
             }
         }
 
-        if (playerTracker != null)
+        if (playerCheckpointTracker != null)
         {
-            playerTracker.ResetProgress();
+            playerCheckpointTracker.ResetProgress();
         }
     }
 
@@ -227,10 +219,10 @@ public class RaceManager : MonoBehaviour
             standings.Add(new CarPositionInfo(agent.name, agentLaps, agentNextCheckpoint, agentDistance, totalCheckpoints));
         }
 
-        if (playerTracker != null)
+        if (playerCheckpointTracker != null)
         {
-            float playerDistance = GetDistanceToNextCheckpoint(playerTracker.transform, playerTracker.nextCheckpoint);
-            standings.Add(new CarPositionInfo("Player", playerTracker.lapCount, playerTracker.nextCheckpoint, playerDistance, totalCheckpoints));
+            float playerDistance = GetDistanceToNextCheckpoint(playerCheckpointTracker.transform, playerCheckpointTracker.nextCheckpoint);
+            standings.Add(new CarPositionInfo("Player", playerCheckpointTracker.lapCount, playerCheckpointTracker.nextCheckpoint, playerDistance, totalCheckpoints));
         }
 
         standings = standings.OrderByDescending(s => s.OverallProgress)
@@ -242,15 +234,15 @@ public class RaceManager : MonoBehaviour
 
     private float GetDistanceToNextCheckpoint(Transform participantTransform, int checkpointIndex)
     {
-        if (trackCheckpoints == null || trackCheckpoints.GetCheckpoints() == null || trackCheckpoints.GetCheckpoints().Count == 0) return 9999f;
-        List<GameObject> checkpoints = trackCheckpoints.GetCheckpoints();
+        if (GetCheckpoints() == null || GetCheckpoints().Count == 0) return 9999f;
+        List<GameObject> checkpoints = GetCheckpoints();
 
         return Vector3.Distance(participantTransform.position, checkpoints[checkpointIndex].transform.position);
     }
 
     public int GetPlayerRank()
     {
-        if (playerTracker == null)
+        if (playerCheckpointTracker == null)
         {
             return -1;
         }
@@ -264,5 +256,21 @@ public class RaceManager : MonoBehaviour
             }
         }
         return -1;
+    }
+
+    public List<GameObject> GetCheckpoints()
+    {
+        List<GameObject> goals = new List<GameObject>();
+        foreach (Transform child in this.transform)
+        {
+            foreach (Transform grandchild in child)
+            {
+                if (grandchild.CompareTag("goal"))
+                {
+                    goals.Add(grandchild.gameObject);
+                }
+            }
+        }
+        return goals;
     }
 }

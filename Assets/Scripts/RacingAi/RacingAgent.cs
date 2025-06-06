@@ -7,7 +7,6 @@ using UnityEngine.InputSystem;
 
 public class RacingAgent : Agent
 {
-    private TrackCheckpoints trackCheckpoints;
     private List<GameObject> orderedGoals;
     private CarControllerAgent carControllerAgent;
     private Rigidbody rb;
@@ -71,25 +70,16 @@ public class RacingAgent : Agent
         if (transform.parent != null)
         {
             raceManager = transform.parent.GetComponent<RaceManager>();
-            trackCheckpoints = transform.parent.GetComponent<TrackCheckpoints>();
         }
 
-        if (raceManager == null)
-        {
-            Debug.LogError("raceManager not found");
-        }
-        else
+        if (raceManager != null)
         {
             raceManager.RegisterAgent(this);
-        }
-
-        if (trackCheckpoints == null)
-        {
-            Debug.LogError("TrackCheckpoints not found");
+            orderedGoals = raceManager.GetCheckpoints();
         }
         else
         {
-            orderedGoals = trackCheckpoints.GetCheckpoints();
+            Debug.LogError("raceManager not found");
         }
 
         lastPosition = transform.position;
@@ -174,21 +164,10 @@ public class RacingAgent : Agent
         lapCount = 0;
         nextCheckpoint = 0;
 
-        if (trackCheckpoints != null)
+        orderedGoals = raceManager.GetCheckpoints();
+        if (orderedGoals != null && orderedGoals.Count > 0)
         {
-            orderedGoals = trackCheckpoints.GetCheckpoints();
-            if (orderedGoals != null && orderedGoals.Count > 0)
-            {
-                previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
-            }
-        }
-
-        if (raceManager == null)
-        {
-            transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.identity;
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            previousCheckpointDistance = Vector3.Distance(transform.position, orderedGoals[nextCheckpoint].transform.position);
         }
     }
 

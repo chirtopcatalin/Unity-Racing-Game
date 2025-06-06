@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class CarCheckpointTracker : MonoBehaviour
 {
-    public TrackCheckpoints trackCheckpoints;
+    public RaceManager raceManager;
 
     private List<GameObject> orderedGoals;
 
@@ -33,17 +33,9 @@ public class CarCheckpointTracker : MonoBehaviour
 
     private void Start()
     {
-        if (trackCheckpoints != null)
+        if (raceManager != null)
         {
-            orderedGoals = trackCheckpoints.GetCheckpoints();
-            if (orderedGoals == null || orderedGoals.Count == 0)
-            {
-                Debug.LogError($"no checkpoint foud.");
-            }
-        }
-        else
-        {
-            Debug.LogError($"trackCheckpointsReference not assigned.");
+            orderedGoals = raceManager.GetCheckpoints();
         }
     }
 
