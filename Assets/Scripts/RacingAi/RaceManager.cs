@@ -162,6 +162,7 @@ public class RaceManager : MonoBehaviour
         return overtakes;
     }
 
+    // for training
     public void ResetAllAgents()
     {
         foreach (var agent in agents)
@@ -172,13 +173,8 @@ public class RaceManager : MonoBehaviour
         {
             if (i < startingPositions.Count)
             {
-                agents[i].ResetAgent(startingPositions[i], startFinish != null ? startFinish.rotation : Quaternion.identity);
+                agents[i].ResetAgent(startingPositions[i], startFinish.rotation);
             }
-        }
-
-        if (playerCheckpointTracker != null)
-        {
-            playerCheckpointTracker.ResetProgress();
         }
     }
 
@@ -187,8 +183,8 @@ public class RaceManager : MonoBehaviour
         if (agents.Contains(agent))
         {
             int index = agents.IndexOf(agent);
-            Vector3 startPos = (index < startingPositions.Count) ? startingPositions[index] : transform.position;
-            Quaternion startRot = (startFinish != null) ? startFinish.rotation : Quaternion.identity;
+            Vector3 startPos = startingPositions[index];
+            Quaternion startRot = startFinish.rotation;
             agent.ResetAgent(startPos, startRot);
             agentProgress[agent] = 0;
         }
@@ -272,5 +268,28 @@ public class RaceManager : MonoBehaviour
             }
         }
         return goals;
+    }
+
+    public int GetAgentPosition(RacingAgent agent)
+    {
+        if (!agentProgress.ContainsKey(agent)) return agents.Count;
+
+        int agentProg = agentProgress[agent];
+        int position = 1;
+
+        foreach (var kvp in agentProgress)
+        {
+            if (kvp.Key != agent && kvp.Value > agentProg)
+            {
+                position++;
+            }
+        }
+
+        return position;
+    }
+
+    public int GetTotalAgents()
+    {
+        return agents.Count + 1;
     }
 }

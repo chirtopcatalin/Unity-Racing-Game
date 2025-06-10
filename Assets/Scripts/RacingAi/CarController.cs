@@ -113,9 +113,9 @@ public class CarController : MonoBehaviour
 
     void FixedUpdate()
     {
+        CalculateEngineTorque();
         AddDownForce();
         Steer();
-        CalculateEngineTorque();
         AdjustTraction();
     }
 
