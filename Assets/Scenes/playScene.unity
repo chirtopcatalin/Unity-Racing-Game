@@ -1414,10 +1414,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 1539783367}
-  positionOffset: {x: 0, y: 4, z: -7}
-  reversePositionOffset: {x: 0, y: 2, z: 4.5}
-  cameraFollowSpeed: 20
-  cameraRotationSpeed: 5
+  positionOffset: {x: 0, y: 3, z: -6}
+  reversePositionOffset: {x: 0, y: 2, z: 5}
+  cameraFollowSpeed: 10
+  cameraRotationSpeed: 8
   switchViewInput: {fileID: 6376302576322673466, guid: ec70c436a4b403e46888bdc52f12d8ab, type: 3}
 --- !u!1 &1747517178
 GameObject:
